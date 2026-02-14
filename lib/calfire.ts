@@ -32,7 +32,7 @@ export async function fetchCalFireIncidents(options?: {
   year?: number;
   inactive?: boolean;
 }): Promise<CalFireRawIncident[]> {
-  const inactive = options?.inactive ?? false;
+  const inactive = options?.inactive ?? true; // default true to include all recent incidents
   const year = options?.year;
 
   const cacheKey = `calfire_incidents_${year ?? "current"}_${inactive}`;
@@ -181,7 +181,9 @@ export function normalizeCalFireIncident(
 }
 
 /**
- * Fetch and normalize all CAL FIRE incidents.
+ * Fetch and normalize CAL FIRE incidents.
+ * By default fetches current year + previous year and merges/dedupes,
+ * so we always have a meaningful list of recent fires.
  */
 export async function getCalFireIncidents(options?: {
   year?: number;
@@ -192,7 +194,29 @@ export async function getCalFireIncidents(options?: {
     raw: CalFireRawIncident;
   }[]
 > {
-  const rawIncidents = await fetchCalFireIncidents(options);
+  let rawIncidents: CalFireRawIncident[];
+
+  if (options?.year) {
+    // Specific year requested
+    rawIncidents = await fetchCalFireIncidents(options);
+  } else {
+    // Fetch current year + previous year for a richer list
+    const currentYear = new Date().getFullYear();
+    const [currentYearData, prevYearData] = await Promise.all([
+      fetchCalFireIncidents({ inactive: options?.inactive ?? true }),
+      fetchCalFireIncidents({ inactive: true, year: currentYear - 1 }),
+    ]);
+
+    // Merge and dedupe by UniqueId
+    const seen = new Set<string>();
+    rawIncidents = [];
+    for (const inc of [...currentYearData, ...prevYearData]) {
+      if (!seen.has(inc.UniqueId)) {
+        seen.add(inc.UniqueId);
+        rawIncidents.push(inc);
+      }
+    }
+  }
 
   return rawIncidents
     .map((raw) => {

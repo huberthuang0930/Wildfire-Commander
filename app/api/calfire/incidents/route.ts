@@ -10,7 +10,7 @@ export async function GET(req: Request) {
     const inactiveParam = searchParams.get("inactive");
 
     const year = yearParam ? parseInt(yearParam, 10) : undefined;
-    const inactive = inactiveParam === "true";
+    const inactive = inactiveParam !== "false"; // default true to show all recent incidents
 
     const results = await getCalFireIncidents({ year, inactive });
 

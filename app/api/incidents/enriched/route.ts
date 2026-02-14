@@ -28,7 +28,7 @@ export async function GET(req: Request) {
     const inactiveParam = searchParams.get("inactive");
 
     const limit = limitParam ? parseInt(limitParam, 10) : 10;
-    const inactive = inactiveParam === "true";
+    const inactive = inactiveParam !== "false"; // default true to include all recent incidents
 
     // 1. Fetch CAL FIRE incidents (already sorted by update time)
     const calFireResults = await getCalFireIncidents({ inactive });
