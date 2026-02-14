@@ -120,3 +120,82 @@ export interface Scenario {
 export interface ScenariosData {
   scenarios: Scenario[];
 }
+
+// ===== CAL FIRE Types =====
+
+export interface CalFireRawIncident {
+  UniqueId: string;
+  Name: string;
+  Location: string;
+  Latitude: number;
+  Longitude: number;
+  AcresBurned: number | null;
+  PercentContained: number | null;
+  Started: string;
+  Updated: string;
+  AdminUnit: string;
+  County: string;
+  ConditionStatement: string | null;
+  SearchDescription: string | null;
+  IsActive: boolean;
+  Url: string;
+  // There may be additional fields; these are the ones we use
+  [key: string]: unknown;
+}
+
+// ===== NWS Types =====
+
+export interface NwsForecastPeriod {
+  number: number;
+  name: string;
+  startTime: string;
+  endTime: string;
+  isDaytime: boolean;
+  temperature: number;
+  temperatureUnit: string;
+  windSpeed: string;
+  windDirection: string;
+  shortForecast: string;
+  detailedForecast: string;
+  relativeHumidity?: { value: number };
+}
+
+export interface NwsAlert {
+  id: string;
+  event: string;
+  headline: string;
+  severity: string;
+  urgency: string;
+  onset: string;
+  expires: string;
+  description: string;
+  instruction: string | null;
+  senderName: string;
+}
+
+export interface NwsEnrichment {
+  forecastPeriods: NwsForecastPeriod[];
+  alerts: NwsAlert[];
+  forecastSummary: string;
+  hasRedFlagWarning: boolean;
+  hasWindAdvisory: boolean;
+}
+
+// ===== Enriched Incident (CAL FIRE + NWS) =====
+
+export interface EnrichedIncident {
+  incident: Incident;
+  calfire: {
+    acres: number | null;
+    containmentPct: number | null;
+    county: string;
+    isActive: boolean;
+    url: string;
+    updatedAt: string;
+  };
+  nws: NwsEnrichment | null;
+  /** Default resources for live incidents (estimated) */
+  resources: Resources;
+  /** Nearby assets (empty for live — could be populated later) */
+  assets: Asset[];
+}
