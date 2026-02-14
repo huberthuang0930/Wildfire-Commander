@@ -152,3 +152,135 @@ export interface HistoricalIncident {
   };
   keyLesson: string;
 }
+
+// ===== CAL FIRE Types =====
+
+export interface CalFireRawIncident {
+  UniqueId: string;
+  Name: string;
+  Location: string;
+  Latitude: number;
+  Longitude: number;
+  AcresBurned: number | null;
+  PercentContained: number | null;
+  Started: string;
+  Updated: string;
+  AdminUnit: string;
+  County: string;
+  ConditionStatement: string | null;
+  SearchDescription: string | null;
+  IsActive: boolean;
+  Url: string;
+  // There may be additional fields; these are the ones we use
+  [key: string]: unknown;
+}
+
+// ===== NWS Types =====
+
+export interface NwsForecastPeriod {
+  number: number;
+  name: string;
+  startTime: string;
+  endTime: string;
+  isDaytime: boolean;
+  temperature: number;
+  temperatureUnit: string;
+  windSpeed: string;
+  windDirection: string;
+  shortForecast: string;
+  detailedForecast: string;
+  relativeHumidity?: { value: number };
+}
+
+export interface NwsAlert {
+  id: string;
+  event: string;
+  headline: string;
+  severity: string;
+  urgency: string;
+  onset: string;
+  expires: string;
+  description: string;
+  instruction: string | null;
+  senderName: string;
+}
+
+export interface NwsEnrichment {
+  forecastPeriods: NwsForecastPeriod[];
+  alerts: NwsAlert[];
+  forecastSummary: string;
+  hasRedFlagWarning: boolean;
+  hasWindAdvisory: boolean;
+}
+
+// ===== NASA FIRMS Types =====
+
+export interface FirmsHotspot {
+  latitude: number;
+  longitude: number;
+  brightness: number;
+  scan: number;
+  track: number;
+  acq_date: string; // "YYYY-MM-DD"
+  acq_time: string; // "HHMM"
+  satellite: string;
+  instrument: string;
+  confidence: string; // "nominal", "high", "low" or numeric
+  version: string;
+  bright_t31: number;
+  frp: number; // Fire Radiative Power (MW)
+  daynight: string; // "D" or "N"
+}
+
+export interface FireCluster {
+  id: string;
+  centroidLat: number;
+  centroidLon: number;
+  pointCount: number;
+  maxFrp: number;
+  maxBrightness: number;
+  totalFrp: number;
+  lastSeen: string; // ISO string
+  radiusMeters: number;
+  hotspots: FirmsHotspot[];
+}
+
+// ===== Enriched Incident (CAL FIRE + NWS + FIRMS) =====
+
+export interface EnrichedIncident {
+  incident: Incident;
+  /** Source of this incident data */
+  source: "calfire" | "arcgis" | "merged" | "firms";
+  calfire: {
+    acres: number | null;
+    containmentPct: number | null;
+    county: string;
+    isActive: boolean;
+    url: string;
+    updatedAt: string;
+  } | null;
+  /** ArcGIS perimeter data (when available from FIRIS/WFIGS) */
+  perimeter: {
+    geometry: {
+      type: "Polygon";
+      coordinates: number[][][];
+    } | null;
+    acres: number | null;
+    displayStatus: string;
+    source: string;
+    incidentNumber: string | null;
+  } | null;
+  /** NASA FIRMS cluster metadata (when source is "firms") */
+  firms: {
+    pointCount: number;
+    maxFrp: number;
+    totalFrp: number;
+    lastSeen: string;
+    satellites: string[];
+  } | null;
+  nws: NwsEnrichment | null;
+  /** Default resources for live incidents (estimated) */
+  resources: Resources;
+  /** Nearby assets (empty for live — could be populated later) */
+  assets: Asset[];
+}

@@ -14,6 +14,8 @@ import type {
   RiskScore,
   Brief,
   WindShift,
+  EnrichedIncident,
+  NwsEnrichment,
   AIInsight,
 } from "@/lib/types";
 import IncidentPanel from "@/components/IncidentPanel";
@@ -21,7 +23,9 @@ import ActionCards from "@/components/ActionCards";
 import ExplainPanel from "@/components/ExplainPanel";
 import AIInsightsPanel from "@/components/AIInsightsPanel";
 import ControlsBar from "@/components/ControlsBar";
+import type { AppMode } from "@/components/ControlsBar";
 import BriefModal from "@/components/BriefModal";
+import IncidentList from "@/components/IncidentList";
 
 // Dynamically import MapView to avoid SSR issues with mapbox-gl
 const MapView = dynamic(() => import("@/components/MapView"), {
@@ -36,9 +40,19 @@ const MapView = dynamic(() => import("@/components/MapView"), {
 const POLL_INTERVAL_MS = 30000; // 30 seconds
 
 export default function Home() {
-  // Data state
+  // ===== Mode state =====
+  const [mode, setMode] = useState<AppMode>("scenario");
+
+  // ===== Scenario mode state =====
   const [scenarios, setScenarios] = useState<Scenario[]>([]);
   const [selectedScenarioId, setSelectedScenarioId] = useState<string | null>(null);
+
+  // ===== Live mode state =====
+  const [liveIncidents, setLiveIncidents] = useState<EnrichedIncident[]>([]);
+  const [selectedLiveIncident, setSelectedLiveIncident] = useState<EnrichedIncident | null>(null);
+  const [liveLoading, setLiveLoading] = useState(false);
+
+  // ===== Shared state =====
   const [incident, setIncident] = useState<Incident | null>(null);
   const [resources, setResources] = useState<Resources | null>(null);
   const [assets, setAssets] = useState<Asset[]>([]);
@@ -53,7 +67,18 @@ export default function Home() {
   const [aiInsights, setAIInsights] = useState<AIInsight[]>([]);
   const [aiLoading, setAILoading] = useState(false);
 
-  // UI state
+  // AI insights state
+  const [aiInsights, setAIInsights] = useState<AIInsight[]>([]);
+  const [aiLoading, setAILoading] = useState(false);
+
+  // ===== Live-specific display data =====
+  const [liveCalfire, setLiveCalfire] = useState<EnrichedIncident["calfire"] | null>(null);
+  const [liveNws, setLiveNws] = useState<NwsEnrichment | null>(null);
+  const [livePerimeter, setLivePerimeter] = useState<EnrichedIncident["perimeter"] | null>(null);
+  const [liveFirms, setLiveFirms] = useState<EnrichedIncident["firms"] | null>(null);
+  const [firmsHotspots, setFirmsHotspots] = useState<{ lat: number; lon: number; frp: number }[]>([]);
+
+  // ===== UI state =====
   const [windShiftEnabled, setWindShiftEnabled] = useState(false);
   const [aiEnabled, setAIEnabled] = useState(true);
   const [briefOpen, setBriefOpen] = useState(false);
@@ -65,7 +90,7 @@ export default function Home() {
   const prevRiskRef = useRef<number | null>(null);
   const pollTimerRef = useRef<NodeJS.Timeout | null>(null);
 
-  // Load scenarios on mount
+  // ===== Load scenarios on mount =====
   useEffect(() => {
     async function loadScenarios() {
       try {
@@ -91,7 +116,92 @@ export default function Home() {
     loadScenarios();
   }, []);
 
-  // Select scenario handler
+  // ===== Fetch live incidents (FIRMS satellite data) =====
+  const fetchLiveIncidents = useCallback(async () => {
+    setLiveLoading(true);
+    try {
+      const res = await fetch("/api/fires/live?days=2&sources=VIIRS_SNPP_NRT,VIIRS_NOAA20_NRT&limit=20&nwsEnrich=3");
+      const data = await res.json();
+      const incidents: EnrichedIncident[] = data.incidents || [];
+      setLiveIncidents(incidents);
+
+      // Store raw hotspot points for map heat layer
+      if (data.hotspotPoints) {
+        setFirmsHotspots(data.hotspotPoints);
+      }
+
+      // If we have a selected live incident, update it with fresh data
+      if (selectedLiveIncident) {
+        const updated = incidents.find(
+          (i) => i.incident.id === selectedLiveIncident.incident.id
+        );
+        if (updated) {
+          setSelectedLiveIncident(updated);
+          setIncident(updated.incident);
+          setResources(updated.resources);
+          setAssets(updated.assets);
+          setLiveCalfire(updated.calfire);
+          setLiveNws(updated.nws);
+          setLivePerimeter(updated.perimeter);
+          setLiveFirms(updated.firms);
+        }
+      }
+    } catch (err) {
+      console.error("Failed to fetch live incidents:", err);
+    } finally {
+      setLiveLoading(false);
+    }
+  }, [selectedLiveIncident]);
+
+  // ===== Load live incidents when switching to live mode =====
+  useEffect(() => {
+    if (mode === "live") {
+      fetchLiveIncidents();
+    }
+  }, [mode]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // ===== Mode toggle handler =====
+  const handleToggleMode = useCallback(() => {
+    setMode((prev) => {
+      const next = prev === "scenario" ? "live" : "scenario";
+
+      // Clear computed data when switching
+      setEnvelopes([]);
+      setCards([]);
+      setRiskScore(null);
+      setBrief(null);
+      setSpreadExplain(null);
+      setWeather(null);
+      setChangesBanner(null);
+      prevRiskRef.current = null;
+
+      if (next === "scenario") {
+        // Restore scenario state
+        setLiveCalfire(null);
+        setLiveNws(null);
+        setLivePerimeter(null);
+        setLiveFirms(null);
+        setFirmsHotspots([]);
+        setSelectedLiveIncident(null);
+
+        const scenario = scenarios.find((s) => s.id === selectedScenarioId);
+        if (scenario) {
+          setIncident(scenario.incident);
+          setResources(scenario.resources);
+          setAssets(scenario.assets);
+        }
+      } else {
+        // Live mode — clear incident until user picks one
+        setIncident(null);
+        setResources(null);
+        setAssets([]);
+      }
+
+      return next;
+    });
+  }, [scenarios, selectedScenarioId]);
+
+  // ===== Select scenario handler =====
   const handleSelectScenario = useCallback(
     (id: string) => {
       const scenario = scenarios.find((s) => s.id === id);
@@ -116,7 +226,32 @@ export default function Home() {
     [scenarios]
   );
 
-  // Fetch weather + spread + recommendations
+  // ===== Select live incident handler =====
+  const handleSelectLiveIncident = useCallback(
+    (enriched: EnrichedIncident) => {
+      setSelectedLiveIncident(enriched);
+      setIncident(enriched.incident);
+      setResources(enriched.resources);
+      setAssets(enriched.assets);
+      setLiveCalfire(enriched.calfire);
+      setLiveNws(enriched.nws);
+      setLivePerimeter(enriched.perimeter);
+      setLiveFirms(enriched.firms);
+
+      // Clear stale computed data
+      setEnvelopes([]);
+      setCards([]);
+      setRiskScore(null);
+      setBrief(null);
+      setSpreadExplain(null);
+      setWeather(null);
+      setChangesBanner(null);
+      prevRiskRef.current = null;
+    },
+    []
+  );
+
+  // ===== Fetch weather + spread + recommendations =====
   const refreshData = useCallback(async () => {
     if (!incident || !resources) return;
 
@@ -128,12 +263,15 @@ export default function Home() {
       const weatherData: Weather = await weatherRes.json();
       setWeather(weatherData);
 
-      // 2. Get current scenario for wind shift
-      const currentScenario = scenarios.find((s) => s.id === selectedScenarioId);
-      const windShift: WindShift | undefined =
-        windShiftEnabled && currentScenario?.defaultWindShift
-          ? currentScenario.defaultWindShift
-          : undefined;
+      // 2. Get current scenario for wind shift (only in scenario mode)
+      let windShift: WindShift | undefined;
+      if (mode === "scenario") {
+        const currentScenario = scenarios.find((s) => s.id === selectedScenarioId);
+        windShift =
+          windShiftEnabled && currentScenario?.defaultWindShift
+            ? currentScenario.defaultWindShift
+            : undefined;
+      }
 
       // 3. Compute spread
       const spreadRes = await fetch("/api/spread", {
@@ -218,21 +356,25 @@ export default function Home() {
     } catch (err) {
       console.error("Error refreshing data:", err);
     }
-  }, [incident, resources, assets, scenarios, selectedScenarioId, windShiftEnabled, aiEnabled]);
+  }, [incident, resources, assets, scenarios, selectedScenarioId, windShiftEnabled, mode, aiEnabled]);
 
-  // Initial data load when incident changes
+  // ===== Initial data load when incident changes =====
   useEffect(() => {
     if (incident) {
       refreshData();
     }
   }, [incident?.id, refreshData]);
 
-  // Polling every 30 seconds
+  // ===== Polling every 30 seconds =====
   useEffect(() => {
     if (!incident) return;
 
     pollTimerRef.current = setInterval(() => {
       refreshData();
+      // Also refresh live incident list if in live mode
+      if (mode === "live") {
+        fetchLiveIncidents();
+      }
     }, POLL_INTERVAL_MS);
 
     return () => {
@@ -240,9 +382,17 @@ export default function Home() {
         clearInterval(pollTimerRef.current);
       }
     };
-  }, [incident?.id, refreshData]);
+  }, [incident?.id, refreshData, mode, fetchLiveIncidents]);
 
-  // Open brief modal
+  // ===== Refresh handler =====
+  const handleRefresh = useCallback(() => {
+    refreshData();
+    if (mode === "live") {
+      fetchLiveIncidents();
+    }
+  }, [refreshData, mode, fetchLiveIncidents]);
+
+  // ===== Open brief modal =====
   const handleOpenBrief = useCallback(async () => {
     if (!incident || !cards.length || !riskScore || !spreadExplain || !brief) {
       setBriefOpen(true);
@@ -276,6 +426,8 @@ export default function Home() {
     <div className="h-screen w-screen overflow-hidden bg-zinc-950 flex flex-col">
       {/* Top controls bar */}
       <ControlsBar
+        mode={mode}
+        onToggleMode={handleToggleMode}
         scenarios={scenarios}
         selectedScenarioId={selectedScenarioId}
         onSelectScenario={handleSelectScenario}
@@ -283,10 +435,11 @@ export default function Home() {
         onToggleWindShift={() => setWindShiftEnabled((prev) => !prev)}
         aiEnabled={aiEnabled}
         onToggleAI={() => setAIEnabled((prev) => !prev)}
-        onRefresh={refreshData}
+        onRefresh={handleRefresh}
         onOpenBrief={handleOpenBrief}
         lastUpdated={lastUpdated}
         changesBanner={changesBanner}
+        liveIncidentCount={liveIncidents.length}
       />
 
       {/* Main content: map + overlays */}
@@ -296,11 +449,33 @@ export default function Home() {
           incident={incident}
           envelopes={envelopes}
           assets={assets}
+          perimeterPolygon={mode === "live" ? livePerimeter?.geometry ?? null : null}
+          firmsHotspots={mode === "live" ? firmsHotspots : undefined}
         />
 
-        {/* Left panel: Incident + Explain + AI Insights */}
+        {/* Left panel + AI Insights */}
         <div className="absolute top-4 left-4 z-10 w-72 space-y-2 max-h-[calc(100vh-120px)] overflow-y-auto scrollbar-thin">
-          <IncidentPanel incident={incident} weather={weather} />
+          {/* In live mode, show incident list */}
+          {mode === "live" && (
+            <IncidentList
+              incidents={liveIncidents}
+              selectedId={incident?.id ?? null}
+              onSelect={handleSelectLiveIncident}
+              loading={liveLoading}
+            />
+          )}
+
+          {/* Incident details panel */}
+          <IncidentPanel
+            incident={incident}
+            weather={weather}
+            calfire={mode === "live" ? liveCalfire : undefined}
+            nws={mode === "live" ? liveNws : undefined}
+            perimeter={mode === "live" ? livePerimeter : undefined}
+            firms={mode === "live" ? liveFirms : undefined}
+          />
+
+          {/* Explain panel */}
           <ExplainPanel riskScore={riskScore} spreadExplain={spreadExplain} />
           <AIInsightsPanel insights={aiInsights} isLoading={aiLoading} />
         </div>

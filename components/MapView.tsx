@@ -25,13 +25,28 @@ const PRIORITY_COLORS: Record<string, [number, number, number]> = {
   low: [76, 175, 80],
 };
 
+interface PerimeterPolygon {
+  type: "Polygon";
+  coordinates: number[][][];
+}
+
+interface HotspotPoint {
+  lat: number;
+  lon: number;
+  frp: number;
+}
+
 interface MapViewProps {
   incident: Incident | null;
   envelopes: SpreadEnvelope[];
   assets: Asset[];
+  /** ArcGIS fire perimeter polygon (live mode) */
+  perimeterPolygon?: PerimeterPolygon | null;
+  /** NASA FIRMS raw hotspot points for heat-like layer (live mode) */
+  firmsHotspots?: HotspotPoint[];
 }
 
-export default function MapView({ incident, envelopes, assets }: MapViewProps) {
+export default function MapView({ incident, envelopes, assets, perimeterPolygon, firmsHotspots }: MapViewProps) {
   const mapContainer = useRef<HTMLDivElement>(null);
   const mapRef = useRef<mapboxgl.Map | null>(null);
   const overlayRef = useRef<MapboxOverlay | null>(null);
@@ -122,6 +137,54 @@ export default function MapView({ incident, envelopes, assets }: MapViewProps) {
 
     const layers: (GeoJsonLayer | ScatterplotLayer)[] = [];
 
+    // ArcGIS fire perimeter polygon (render behind everything)
+    if (perimeterPolygon) {
+      layers.push(
+        new GeoJsonLayer({
+          id: "fire-perimeter",
+          data: {
+            type: "Feature",
+            geometry: perimeterPolygon,
+            properties: { type: "perimeter" },
+          },
+          filled: true,
+          stroked: true,
+          getFillColor: [255, 69, 0, 60], // red-orange, very translucent
+          getLineColor: [255, 69, 0, 220],
+          getLineWidth: 3,
+          lineWidthUnits: "pixels",
+          pickable: true,
+        })
+      );
+    }
+
+    // FIRMS satellite hotspot points (render behind envelopes, as heat-like dots)
+    if (firmsHotspots && firmsHotspots.length > 0) {
+      // Compute max FRP for color scaling
+      const maxFrp = Math.max(...firmsHotspots.map((h) => h.frp), 1);
+
+      layers.push(
+        new ScatterplotLayer({
+          id: "firms-hotspots",
+          data: firmsHotspots,
+          getPosition: (d: HotspotPoint) => [d.lon, d.lat],
+          getRadius: 400,
+          getFillColor: (d: HotspotPoint) => {
+            // Color from yellow (low FRP) to red (high FRP)
+            const t = Math.min(d.frp / maxFrp, 1);
+            return [
+              255,
+              Math.round(200 * (1 - t)), // yellow → red
+              0,
+              Math.round(80 + 120 * t), // more opaque at higher FRP
+            ] as [number, number, number, number];
+          },
+          radiusUnits: "meters",
+          pickable: false,
+        })
+      );
+    }
+
     // Spread envelope layers (render in reverse so 3h is behind 1h)
     const sortedEnvelopes = [...envelopes].sort((a, b) => b.tHours - a.tHours);
     
@@ -206,7 +269,7 @@ export default function MapView({ incident, envelopes, assets }: MapViewProps) {
     }
 
     overlayRef.current.setProps({ layers });
-  }, [incident, envelopes, assets, mapLoaded]);
+  }, [incident, envelopes, assets, perimeterPolygon, firmsHotspots, mapLoaded]);
 
   // Animate pulse + update layers
   useEffect(() => {
