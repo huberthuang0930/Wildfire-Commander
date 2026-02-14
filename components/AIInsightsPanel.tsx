@@ -9,6 +9,10 @@ import type { AIInsight } from "@/lib/types";
 interface AIInsightsPanelProps {
   insights: AIInsight[];
   isLoading: boolean;
+  hasRun: boolean;
+  onRunAI: () => void;
+  aiEnabled: boolean;
+  canRun: boolean;
 }
 
 function InsightCard({ insight, index }: { insight: AIInsight; index: number }) {
@@ -89,6 +93,10 @@ function InsightCard({ insight, index }: { insight: AIInsight; index: number }) 
 export default function AIInsightsPanel({
   insights,
   isLoading,
+  hasRun,
+  onRunAI,
+  aiEnabled,
+  canRun,
 }: AIInsightsPanelProps) {
   const [collapsed, setCollapsed] = useState(false);
 
@@ -133,16 +141,60 @@ export default function AIInsightsPanel({
                   ))}
                 </div>
 
-                <div className="mt-3 pt-2 border-t border-zinc-700">
+                <div className="mt-3 pt-2 border-t border-zinc-700 flex items-center justify-between">
                   <p className="text-[9px] text-zinc-500 italic">
                     AI insights supplement, not replace, IC judgment. Verify with
                     local knowledge and protocols.
                   </p>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={onRunAI}
+                    disabled={!canRun || !aiEnabled || isLoading}
+                    className="text-[10px] text-blue-400 hover:text-blue-300 h-5 px-2"
+                  >
+                    Re-analyze
+                  </Button>
                 </div>
               </>
+            ) : !hasRun ? (
+              <div className="text-center py-4">
+                {!aiEnabled ? (
+                  <p className="text-xs text-zinc-500 mb-2">
+                    AI insights are disabled
+                  </p>
+                ) : !canRun ? (
+                  <p className="text-xs text-zinc-500 mb-2">
+                    Select a fire and wait for data to load
+                  </p>
+                ) : (
+                  <>
+                    <p className="text-xs text-zinc-400 mb-3">
+                      Click below to analyze this fire using real NASA FIRMS satellite data
+                    </p>
+                    <Button
+                      onClick={onRunAI}
+                      disabled={!canRun || !aiEnabled || isLoading}
+                      className="bg-blue-600 hover:bg-blue-700 text-white text-sm px-4 py-2 h-8"
+                    >
+                      🔥 Analyze Fire
+                    </Button>
+                  </>
+                )}
+              </div>
             ) : (
-              <div className="text-xs text-zinc-500 text-center py-2">
-                AI insights unavailable
+              <div className="text-center py-4">
+                <p className="text-xs text-zinc-500 mb-3">
+                  No insights generated
+                </p>
+                <Button
+                  variant="ghost"
+                  onClick={onRunAI}
+                  disabled={!canRun || !aiEnabled || isLoading}
+                  className="text-xs text-blue-400 hover:text-blue-300"
+                >
+                  Try again
+                </Button>
               </div>
             )}
           </>

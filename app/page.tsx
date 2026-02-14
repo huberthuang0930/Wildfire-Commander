@@ -66,6 +66,7 @@ export default function Home() {
   // AI insights state
   const [aiInsights, setAIInsights] = useState<AIInsight[]>([]);
   const [aiLoading, setAILoading] = useState(false);
+  const [aiHasRun, setAIHasRun] = useState(false);
 
   // ===== Live-specific display data =====
   const [liveCalfire, setLiveCalfire] = useState<EnrichedIncident["calfire"] | null>(null);
@@ -116,9 +117,16 @@ export default function Home() {
   const fetchLiveIncidents = useCallback(async () => {
     setLiveLoading(true);
     try {
-      const res = await fetch("/api/fires/live?days=2&sources=VIIRS_SNPP_NRT,VIIRS_NOAA20_NRT&limit=20&nwsEnrich=3");
+      console.log('[Live Mode] Fetching NASA FIRMS fire data for California...');
+      const res = await fetch("/api/fires/live?days=2&sources=VIIRS_SNPP_NRT,VIIRS_NOAA20_NRT&limit=20&nwsEnrich=3&bbox=-124.5,32.5,-114.1,42.1");
       const data = await res.json();
       const incidents: EnrichedIncident[] = data.incidents || [];
+      console.log(`[Live Mode] Loaded ${incidents.length} fire incidents from NASA FIRMS`);
+      console.log(`[Live Mode] Total hotspots: ${data.totalHotspots || 0}`);
+      if (incidents.length > 0) {
+        console.log('[Live Mode] Sample fire:', incidents[0].incident.name,
+          `at (${incidents[0].incident.lat}, ${incidents[0].incident.lon})`);
+      }
       setLiveIncidents(incidents);
 
       // Store raw hotspot points for map heat layer
@@ -169,6 +177,8 @@ export default function Home() {
       setSpreadExplain(null);
       setWeather(null);
       setChangesBanner(null);
+      setAIInsights([]);
+      setAIHasRun(false);
       prevRiskRef.current = null;
 
       if (next === "scenario") {
@@ -217,6 +227,8 @@ export default function Home() {
       setSpreadExplain(null);
       setWeather(null);
       setChangesBanner(null);
+      setAIInsights([]);
+      setAIHasRun(false);
       prevRiskRef.current = null;
     },
     [scenarios]
@@ -242,6 +254,8 @@ export default function Home() {
       setSpreadExplain(null);
       setWeather(null);
       setChangesBanner(null);
+      setAIInsights([]);
+      setAIHasRun(false);
       prevRiskRef.current = null;
     },
     []
@@ -320,39 +334,11 @@ export default function Home() {
         prevRiskRef.current = recsData.riskScore.total;
       }
 
-      // 5. Fetch AI insights (only if AI is enabled)
-      if (aiEnabled && recsData.riskScore) {
-        setAILoading(true);
-        try {
-          const aiRes = await fetch("/api/ai-insights", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({
-              incident,
-              weather: weatherData,
-              riskScore: recsData.riskScore,
-              spreadRate: spreadData.explain.rateKmH,
-              cards: recsData.cards || [],
-            }),
-          });
-          const aiData = await aiRes.json();
-          setAIInsights(aiData.insights || []);
-        } catch (err) {
-          console.error("AI insights error:", err);
-          setAIInsights([]);
-        } finally {
-          setAILoading(false);
-        }
-      } else if (!aiEnabled) {
-        // Clear insights when AI is disabled
-        setAIInsights([]);
-      }
-
       setLastUpdated(new Date());
     } catch (err) {
       console.error("Error refreshing data:", err);
     }
-  }, [incident, resources, assets, scenarios, selectedScenarioId, windShiftEnabled, mode, aiEnabled]);
+  }, [incident, resources, assets, scenarios, selectedScenarioId, windShiftEnabled, mode]);
 
   // ===== Initial data load when incident changes =====
   useEffect(() => {
@@ -387,6 +373,43 @@ export default function Home() {
       fetchLiveIncidents();
     }
   }, [refreshData, mode, fetchLiveIncidents]);
+
+  // ===== Manual AI insights trigger =====
+  const handleRunAI = useCallback(async () => {
+    if (!incident || !weather || !riskScore || !cards.length) {
+      console.warn("Cannot run AI: missing required data");
+      return;
+    }
+
+    if (!aiEnabled) {
+      console.warn("AI is disabled");
+      return;
+    }
+
+    setAILoading(true);
+    setAIHasRun(true);
+
+    try {
+      const aiRes = await fetch("/api/ai-insights", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          incident,
+          weather,
+          riskScore,
+          spreadRate: spreadExplain?.rateKmH || 0,
+          cards,
+        }),
+      });
+      const aiData = await aiRes.json();
+      setAIInsights(aiData.insights || []);
+    } catch (err) {
+      console.error("AI insights error:", err);
+      setAIInsights([]);
+    } finally {
+      setAILoading(false);
+    }
+  }, [incident, weather, riskScore, cards, spreadExplain, aiEnabled]);
 
   // ===== Open brief modal =====
   const handleOpenBrief = useCallback(async () => {
@@ -447,6 +470,8 @@ export default function Home() {
           assets={assets}
           perimeterPolygon={mode === "live" ? livePerimeter?.geometry ?? null : null}
           firmsHotspots={mode === "live" ? firmsHotspots : undefined}
+          liveIncidents={mode === "live" ? liveIncidents : undefined}
+          selectedIncidentId={mode === "live" ? incident?.id : undefined}
         />
 
         {/* Left panel + AI Insights */}
@@ -473,7 +498,14 @@ export default function Home() {
 
           {/* Explain panel */}
           <ExplainPanel riskScore={riskScore} spreadExplain={spreadExplain} />
-          <AIInsightsPanel insights={aiInsights} isLoading={aiLoading} />
+          <AIInsightsPanel
+            insights={aiInsights}
+            isLoading={aiLoading}
+            hasRun={aiHasRun}
+            onRunAI={handleRunAI}
+            aiEnabled={aiEnabled}
+            canRun={!!(incident && weather && riskScore && cards.length)}
+          />
         </div>
 
         {/* Right panel: Action Cards */}

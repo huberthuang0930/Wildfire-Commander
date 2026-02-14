@@ -4,7 +4,52 @@ import { useEffect, useRef, useCallback, useState } from "react";
 import mapboxgl from "mapbox-gl";
 import { MapboxOverlay } from "@deck.gl/mapbox";
 import { GeoJsonLayer, ScatterplotLayer } from "@deck.gl/layers";
-import type { Incident, SpreadEnvelope, Asset } from "@/lib/types";
+import type { Incident, SpreadEnvelope, Asset, EnrichedIncident } from "@/lib/types";
+
+// Intensity type definition
+type IntensityLevel = 'low' | 'medium' | 'high' | 'critical';
+
+// Helper functions for fire markers
+const getMarkerColor = (intensity: IntensityLevel): string => {
+  switch (intensity) {
+    case 'critical': return '#FF6B00'; // Fire orange
+    case 'high': return '#FF4444';     // Bright red
+    case 'medium': return '#FF8C00';   // Dark orange
+    case 'low': return '#00C2FF';      // Cyan
+    default: return '#6b7280';         // Gray
+  }
+};
+
+const getMarkerSize = (intensity: IntensityLevel): number => {
+  switch (intensity) {
+    case 'critical': return 24;
+    case 'high': return 20;
+    case 'medium': return 16;
+    case 'low': return 12;
+    default: return 14;
+  }
+};
+
+const getPulseSize = (intensity: IntensityLevel): number => {
+  switch (intensity) {
+    case 'critical': return 60;
+    case 'high': return 50;
+    case 'medium': return 40;
+    case 'low': return 30;
+    default: return 35;
+  }
+};
+
+// Map FRP (Fire Radiative Power) to intensity level
+const getIntensityFromFRP = (frp: number, maxFrp: number): IntensityLevel => {
+  if (maxFrp === 0) return 'low';
+  const severity = frp / maxFrp;
+
+  if (severity > 0.75) return 'critical';
+  if (severity > 0.5) return 'high';
+  if (severity > 0.25) return 'medium';
+  return 'low';
+};
 
 // Envelope colors: 1h=yellow, 2h=orange, 3h=red
 const ENVELOPE_COLORS: Record<number, [number, number, number, number]> = {
@@ -44,15 +89,22 @@ interface MapViewProps {
   perimeterPolygon?: PerimeterPolygon | null;
   /** NASA FIRMS raw hotspot points for heat-like layer (live mode) */
   firmsHotspots?: HotspotPoint[];
+  /** All live incidents to show as fire icons (live mode) */
+  liveIncidents?: EnrichedIncident[];
+  /** ID of the selected incident to highlight (live mode) */
+  selectedIncidentId?: string;
+  /** Optional callback when an incident marker is clicked */
+  onIncidentSelect?: (incident: { id: string; name: string; lat: number; lon: number }) => void;
 }
 
-export default function MapView({ incident, envelopes, assets, perimeterPolygon, firmsHotspots }: MapViewProps) {
+export default function MapView({ incident, envelopes, assets, perimeterPolygon, firmsHotspots, liveIncidents, selectedIncidentId, onIncidentSelect }: MapViewProps) {
   const mapContainer = useRef<HTMLDivElement>(null);
   const mapRef = useRef<mapboxgl.Map | null>(null);
   const overlayRef = useRef<MapboxOverlay | null>(null);
   const [mapLoaded, setMapLoaded] = useState(false);
   const [mapError, setMapError] = useState<string | null>(null);
   const animationRef = useRef<number>(0);
+  const markersRef = useRef<mapboxgl.Marker[]>([]);
 
   // Initialize map
   useEffect(() => {
@@ -112,6 +164,10 @@ export default function MapView({ incident, envelopes, assets, perimeterPolygon,
       if (animationRef.current) {
         cancelAnimationFrame(animationRef.current);
       }
+      // Clean up markers
+      markersRef.current.forEach(marker => marker.remove());
+      markersRef.current = [];
+
       if (mapRef.current) {
         mapRef.current.remove();
         mapRef.current = null;
@@ -119,6 +175,151 @@ export default function MapView({ incident, envelopes, assets, perimeterPolygon,
       overlayRef.current = null;
     };
   }, []);
+
+  // Create native Mapbox markers for live incidents
+  useEffect(() => {
+    if (!mapRef.current || !mapLoaded || !liveIncidents || liveIncidents.length === 0) return;
+
+    // Clean up existing markers
+    markersRef.current.forEach(marker => marker.remove());
+    markersRef.current = [];
+
+    // Calculate max FRP for intensity mapping
+    const frpValues = liveIncidents.map((e) => e.firms?.maxFrp || 0);
+    const maxFrp = Math.max(...frpValues, 1);
+
+    // Create a marker for each incident
+    liveIncidents.forEach((enriched) => {
+      const { incident, firms } = enriched;
+      const { lon, lat, id, name } = incident;
+
+      // Validate coordinates
+      if (typeof lon !== 'number' || typeof lat !== 'number') return;
+
+      // Determine intensity from FRP
+      const frp = firms?.maxFrp || 0;
+      const intensity = getIntensityFromFRP(frp, maxFrp);
+      const isActive = true; // All fires are considered active in live mode
+      const isSelected = selectedIncidentId === id;
+
+      // Create marker container
+      const markerEl = document.createElement('div');
+      markerEl.className = 'relative';
+      markerEl.style.cursor = 'pointer';
+      markerEl.style.zIndex = isSelected ? '200' : '100';
+
+      // Add pulse animation for active fires
+      if (isActive) {
+        const pulseEl = document.createElement('div');
+        pulseEl.className = 'absolute rounded-full border-2 opacity-30 pulse-animation';
+        pulseEl.style.width = `${getPulseSize(intensity)}px`;
+        pulseEl.style.height = `${getPulseSize(intensity)}px`;
+        pulseEl.style.borderColor = getMarkerColor(intensity);
+        pulseEl.style.transform = 'translate(-50%, -50%)';
+        pulseEl.style.top = '50%';
+        pulseEl.style.left = '50%';
+        pulseEl.style.position = 'absolute';
+        pulseEl.style.zIndex = '1';
+        markerEl.appendChild(pulseEl);
+      }
+
+      // Create main circular marker
+      const mainMarker = document.createElement('div');
+      mainMarker.className = 'rounded-full border-2 border-white shadow-lg relative';
+      mainMarker.style.width = `${getMarkerSize(intensity)}px`;
+      mainMarker.style.height = `${getMarkerSize(intensity)}px`;
+      mainMarker.style.backgroundColor = getMarkerColor(intensity);
+      mainMarker.style.transform = 'translate(-50%, -50%)';
+      mainMarker.style.position = 'absolute';
+      mainMarker.style.top = '50%';
+      mainMarker.style.left = '50%';
+      mainMarker.style.zIndex = '100';
+      mainMarker.style.boxShadow = `0 0 20px ${getMarkerColor(intensity)}40`;
+      markerEl.appendChild(mainMarker);
+
+      // Create label (shown when selected)
+      const labelEl = document.createElement('div');
+      labelEl.className = 'absolute whitespace-nowrap fire-label';
+      labelEl.style.left = '50%';
+      labelEl.style.top = '100%';
+      labelEl.style.transform = 'translateX(-50%)';
+      labelEl.style.marginTop = '8px';
+      labelEl.style.backgroundColor = 'rgba(0, 0, 0, 0.75)';
+      labelEl.style.color = 'white';
+      labelEl.style.padding = '4px 8px';
+      labelEl.style.borderRadius = '6px';
+      labelEl.style.fontSize = '11px';
+      labelEl.style.fontWeight = '600';
+      labelEl.style.border = `1px solid ${getMarkerColor(intensity)}`;
+      labelEl.style.boxShadow = '0 2px 4px rgba(0,0,0,0.3)';
+      labelEl.style.pointerEvents = 'none';
+      labelEl.style.zIndex = '101';
+      labelEl.style.display = isSelected ? 'block' : 'none';
+      labelEl.textContent = name;
+      labelEl.setAttribute('data-fire-id', id.toString());
+      markerEl.appendChild(labelEl);
+
+      // Add click handler
+      markerEl.addEventListener('click', () => {
+        // Hide all other labels
+        document.querySelectorAll('.fire-label').forEach((label) => {
+          (label as HTMLElement).style.display = 'none';
+        });
+
+        // Show label for this fire
+        const label = markerEl.querySelector('.fire-label');
+        if (label) {
+          (label as HTMLElement).style.display = 'block';
+        }
+
+        // Trigger callback if provided
+        if (onIncidentSelect) {
+          onIncidentSelect({
+            id: id.toString(),
+            name: name,
+            lat: lat,
+            lon: lon,
+          });
+        }
+      });
+
+      // Create and add marker to map
+      const marker = new mapboxgl.Marker({ element: markerEl })
+        .setLngLat([lon, lat])
+        .addTo(mapRef.current);
+
+      // Store marker reference
+      markersRef.current.push(marker);
+    });
+
+  }, [liveIncidents, mapLoaded, selectedIncidentId, onIncidentSelect]);
+
+  // Zoom to fit all live incidents when they load (only if no incident selected)
+  useEffect(() => {
+    if (!mapRef.current || !liveIncidents || liveIncidents.length === 0) return;
+    if (incident) return; // Don't zoom if an incident is selected
+
+    try {
+      const bounds = new mapboxgl.LngLatBounds();
+      liveIncidents.forEach((enriched) => {
+        bounds.extend([enriched.incident.lon, enriched.incident.lat]);
+      });
+
+      mapRef.current.fitBounds(bounds, {
+        padding: 100,
+        maxZoom: 10,
+        duration: 1000,
+      });
+
+      // Log FRP values once
+      console.log(`[MapView] Zoomed to fit ${liveIncidents.length} incidents`);
+      const frpValues = liveIncidents.map(e => e.firms?.maxFrp || 0);
+      console.log('[MapView] FRP range:', Math.min(...frpValues), '-', Math.max(...frpValues));
+      console.log('[MapView] Point counts:', liveIncidents.map(e => e.firms?.pointCount || 0));
+    } catch (e) {
+      console.error('[MapView] Error fitting bounds:', e);
+    }
+  }, [liveIncidents?.length, incident]);
 
   // Fly to incident when it changes
   useEffect(() => {
@@ -233,43 +434,13 @@ export default function MapView({ incident, envelopes, assets, perimeterPolygon,
       );
     }
 
-    // Incident point (pulsing fire origin)
-    if (incident) {
-      const pulseRadius = 150 + Math.sin(Date.now() / 300) * 50;
+    // Note: Live incident fire icons are now rendered as native Mapbox markers
+    // (See useEffect for marker creation above)
 
-      layers.push(
-        new ScatterplotLayer({
-          id: "incident-pulse",
-          data: [incident],
-          getPosition: (d: Incident) => [d.lon, d.lat],
-          getRadius: pulseRadius,
-          getFillColor: [255, 87, 34, 100],
-          getLineColor: [255, 87, 34, 255],
-          getLineWidth: 3,
-          stroked: true,
-          lineWidthUnits: "pixels",
-          radiusUnits: "meters",
-        })
-      );
-
-      layers.push(
-        new ScatterplotLayer({
-          id: "incident-center",
-          data: [incident],
-          getPosition: (d: Incident) => [d.lon, d.lat],
-          getRadius: 80,
-          getFillColor: [255, 61, 0, 220],
-          getLineColor: [255, 255, 255, 255],
-          getLineWidth: 2,
-          stroked: true,
-          lineWidthUnits: "pixels",
-          radiusUnits: "meters",
-        })
-      );
-    }
+    // Note: Selected incident pulse is now handled by CSS animation in native markers
 
     overlayRef.current.setProps({ layers });
-  }, [incident, envelopes, assets, perimeterPolygon, firmsHotspots, mapLoaded]);
+  }, [incident, envelopes, assets, perimeterPolygon, firmsHotspots, liveIncidents, selectedIncidentId, mapLoaded]);
 
   // Animate pulse + update layers
   useEffect(() => {

@@ -146,20 +146,21 @@ ${historicalSummary}
 
 ${directionalSpreadSummary}
 
-TASK: Generate 2-3 natural language insights for the incident commander:
-1. Time-critical threats with directional specificity ("Fire will reach X to the NORTH in Y hours based on Z km/h spread rate" - use directional spread data)
-2. Historical patterns ("In similar conditions, fires spread Z km/h to the EAST..." - use statistics from directional spread analysis)
-3. Resource recommendations with context ("Air support reduces escape by X%" - backed by historical outcomes and spread patterns)
+TASK: Generate 2-3 tactical briefing points in incident commander style:
+1. Time-critical threats with directional specificity - use directional spread data
+2. Historical patterns - reference similar fire behavior from directional spread analysis
+3. Resource recommendations - backed by historical outcomes
 
 REQUIREMENTS:
-- Each insight message: 15-25 words, direct, actionable
+- Each insight message: 8-12 words maximum. Use IC brevity. Example: "NORTHEAST expansion 3.2 km/h. Highway 101 threatened in 90 min."
 - Confidence levels:
   * High: 5+ similar historical incidents with consistent patterns (>80% agreement)
   * Medium: 3-4 similar incidents or 50-80% pattern agreement
   * Low: 1-2 similar incidents or <50% pattern agreement
-- Provide 2-4 reasoning bullets per insight explaining WHY
+- Provide 1-2 concise reasoning points (one sentence each, no fluff)
 - Reference specific incident IDs in sources array when applicable
-- Use firefighter-friendly language (no jargon)
+- Use tactical IC language: directional calls (NORTH, SOUTHEAST), time windows, asset names, action verbs
+- NO explanatory phrases. NO "based on" or "considering". State facts only.
 - Focus on what matters NOW in the 0-3 hour window
 
 FORMAT: Return valid JSON only (no markdown, no explanations):
@@ -167,10 +168,23 @@ FORMAT: Return valid JSON only (no markdown, no explanations):
   "insights": [
     {
       "type": "warning" | "recommendation" | "context",
-      "message": "15-25 word actionable insight",
+      "message": "8-12 word tactical brief in IC style",
       "confidence": "high" | "medium" | "low",
-      "reasoning": ["Bullet 1", "Bullet 2", "Bullet 3"],
+      "reasoning": ["Concise fact 1", "Concise fact 2 (optional)"],
       "sources": ["incident_id_1", "incident_id_2"]
+    }
+  ]
+}
+
+EXAMPLE OUTPUT:
+{
+  "insights": [
+    {
+      "type": "warning",
+      "message": "NORTHEAST spread 4.1 km/h. Town boundary threatened 75 minutes.",
+      "confidence": "high",
+      "reasoning": ["6 similar fires averaged 3.8 km/h NE expansion", "Current wind aligns with historical pattern"],
+      "sources": ["fire_2018_001", "fire_2019_045"]
     }
   ]
 }`;
