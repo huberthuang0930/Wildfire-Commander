@@ -89,8 +89,9 @@ export function computeSpreadEnvelopes(
       windDir = windShift.newDirDeg;
 
       if (t === Math.ceil(windShift.atMinutes / 60)) {
+        // ASCII-only to avoid any Windows encoding/mojibake issues in logs/UI
         notes.push(
-          `Wind shift at +${windShift.atMinutes}m: ${weather.windDirDeg}° → ${windShift.newDirDeg}°`
+          `Wind shift at +${windShift.atMinutes}m: ${weather.windDirDeg} deg -> ${windShift.newDirDeg} deg`
         );
       }
     }

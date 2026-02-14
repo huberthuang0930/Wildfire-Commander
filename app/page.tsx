@@ -26,6 +26,9 @@ import ControlsBar from "@/components/ControlsBar";
 import type { AppMode } from "@/components/ControlsBar";
 import BriefModal from "@/components/BriefModal";
 import IncidentList from "@/components/IncidentList";
+import ChatPanel from "@/components/ChatPanel";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import type { ChatMessage } from "@/lib/chat/types";
 
 // Dynamically import MapView to avoid SSR issues with mapbox-gl
 const MapView = dynamic(() => import("@/components/MapView"), {
@@ -82,6 +85,10 @@ export default function Home() {
   const [briefMarkdown, setBriefMarkdown] = useState<string | null>(null);
   const [lastUpdated, setLastUpdated] = useState<Date | null>(null);
   const [changesBanner, setChangesBanner] = useState<string | null>(null);
+
+  // ===== Chat state =====
+  const [chatMessages, setChatMessages] = useState<ChatMessage[]>([]);
+  const [chatLoading, setChatLoading] = useState(false);
 
   // Track previous values for change detection
   const prevRiskRef = useRef<number | null>(null);
@@ -347,6 +354,11 @@ export default function Home() {
     }
   }, [incident?.id, refreshData]);
 
+  // Reset chat thread when switching incidents (keeps chat incident-aware)
+  useEffect(() => {
+    setChatMessages([]);
+  }, [incident?.id]);
+
   // ===== Polling every 30 seconds =====
   useEffect(() => {
     if (!incident) return;
@@ -441,6 +453,95 @@ export default function Home() {
     setBriefOpen(true);
   }, [incident, cards, riskScore, spreadExplain, brief]);
 
+  const handleSendChat = useCallback(
+    async (text: string) => {
+      if (!incident) return;
+      const userMsg: ChatMessage = {
+        id: `u_${Date.now()}_${Math.random().toString(16).slice(2)}`,
+        role: "user",
+        createdAt: Date.now(),
+        content: text,
+      };
+      setChatMessages((prev) => [...prev, userMsg]);
+      setChatLoading(true);
+
+      try {
+        const scenarioWindShift =
+          mode === "scenario"
+            ? scenarios.find((s) => s.id === selectedScenarioId)?.defaultWindShift
+            : undefined;
+        const windShift =
+          mode === "scenario" && windShiftEnabled && scenarioWindShift
+            ? scenarioWindShift
+            : null;
+
+        const active = {
+          mode,
+          incidentId: incident.id,
+          name: incident.name,
+          lat: incident.lat,
+          lon: incident.lon,
+          windShiftEnabled: mode === "scenario" ? windShiftEnabled : undefined,
+          windShift: mode === "scenario" ? windShift : undefined,
+          incident,
+          resources,
+          assets,
+          weather,
+          spread: spreadExplain
+            ? { envelopes, explain: spreadExplain }
+            : null,
+          cards:
+            cards && cards.length > 0 && riskScore && brief
+              ? { cards, riskScore, brief }
+              : null,
+        };
+
+        const res = await fetch("/api/chat", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            messages: [...chatMessages, userMsg],
+            active,
+          }),
+        });
+        const data = await res.json();
+        if (data?.assistant) {
+          setChatMessages((prev) => [...prev, data.assistant as ChatMessage]);
+        }
+      } catch (err) {
+        console.error("Chat error:", err);
+        setChatMessages((prev) => [
+          ...prev,
+          {
+            id: `asst_${Date.now()}`,
+            role: "assistant",
+            createdAt: Date.now(),
+            content:
+              "{\"decision\":\"Chat unavailable\",\"evidence\":[],\"actions_0_3h\":[],\"uncertainties\":[\"Network or server error\"]}",
+          } as ChatMessage,
+        ]);
+      } finally {
+        setChatLoading(false);
+      }
+    },
+    [
+      incident,
+      mode,
+      resources,
+      assets,
+      weather,
+      envelopes,
+      spreadExplain,
+      cards,
+      riskScore,
+      brief,
+      chatMessages,
+      scenarios,
+      selectedScenarioId,
+      windShiftEnabled,
+    ]
+  );
+
   return (
     <div className="h-screen w-screen overflow-hidden bg-zinc-950 flex flex-col">
       {/* Top controls bar */}
@@ -510,7 +611,28 @@ export default function Home() {
 
         {/* Right panel: Action Cards */}
         <div className="absolute top-4 right-4 z-10 w-80 max-h-[calc(100vh-120px)] overflow-y-auto scrollbar-thin">
-          <ActionCards cards={cards} />
+          <Tabs defaultValue="cards" className="w-full">
+            <TabsList className="w-full bg-zinc-900/90 border border-zinc-700">
+              <TabsTrigger value="cards" className="text-xs">
+                Action Cards
+              </TabsTrigger>
+              <TabsTrigger value="chat" className="text-xs">
+                Chat
+              </TabsTrigger>
+            </TabsList>
+            <TabsContent value="cards" className="mt-2">
+              <ActionCards cards={cards} />
+            </TabsContent>
+            <TabsContent value="chat" className="mt-2">
+              <ChatPanel
+                mode={mode}
+                activeIncidentName={incident?.name || ""}
+                messages={chatMessages}
+                isLoading={chatLoading}
+                onSend={handleSendChat}
+              />
+            </TabsContent>
+          </Tabs>
         </div>
 
         {/* Bottom center: Brief summary */}

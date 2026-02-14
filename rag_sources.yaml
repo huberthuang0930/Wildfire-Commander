@@ -1,0 +1,132 @@
+sources:
+  # --- Tier 0 (Must-have) ---
+  - id: irpg_2025
+    title: "NWCG Incident Response Pocket Guide (IRPG), PMS 461 (2025)"
+    url: "https://fs-prod-nwcg.s3.us-gov-west-1.amazonaws.com/s3fs-public/publication/pms461.pdf"
+    type: pdf
+    priority: 0
+    chunking: "by_heading"
+
+  - id: ico_pms206
+    title: "Incident Commander's Organizer, PMS 206"
+    url: "https://fs-prod-nwcg.s3.us-gov-west-1.amazonaws.com/s3fs-public/publication/pms206.pdf"
+    type: pdf
+    priority: 0
+    chunking: "by_heading"
+
+  - id: ict5_standards_pms350_116
+    title: "NWCG Incident Position Standards for Incident Commander Type 5, PMS 350-116"
+    url: "https://fs-prod-nwcg.s3.us-gov-west-1.amazonaws.com/s3fs-public/publication/pms350-116.pdf"
+    type: pdf
+    priority: 0
+    chunking: "by_heading"
+
+  - id: firescope_fog_manual_page
+    title: "FIRESCOPE FOG Manual (2022 FOG overview)"
+    url: "https://firescope.caloes.ca.gov/fog-manual"
+    type: html
+    priority: 0
+    chunking: "by_section"
+
+  - id: firescope_fog_app_guide
+    title: "FIRESCOPE FOG App Help Guide (how content is organized)"
+    url: "https://firescope.caloes.ca.gov/ICS%20Documents/FOG_App_helpguide.pdf"
+    type: pdf
+    priority: 0
+    chunking: "by_heading"
+
+  - id: firescope_fog_pdf_2017
+    title: "FIRESCOPE Field Operations Guide (FOG) ICS 420-1 (2017 PDF)"
+    url: "https://exams.sdfdtraining.com/captain/res/manuals/Guidebooks/Firescope_Field_Operations_Guide.pdf"
+    type: pdf
+    priority: 0
+    chunking: "by_heading"
+    note: "Use as ingestable content; mark as older edition in metadata."
+
+  - id: usfa_fog_2016
+    title: "USFA Field Operations Guide ICS 420-1 (2016 PDF)"
+    url: "https://www.usfa.fema.gov/downloads/pdf/publications/field_operations_guide.pdf"
+    type: pdf
+    priority: 1
+    chunking: "by_heading"
+
+  - id: pms110_18_poster
+    title: "10 Standard Fire Orders + 18 Watch Outs Poster (PMS 110-18)"
+    url: "https://fs-prod-nwcg.s3.us-gov-west-1.amazonaws.com/s3fs-public/2023-06/pms110-18.pdf?VersionId=Ie9_jcZXogMy9TYfOqMVQGnmNRRTKHw7"
+    type: pdf
+    priority: 0
+    chunking: "single_page_or_sections"
+
+  - id: nwcg_6mfs_topics_all
+    title: "NWCG 6 Minutes for Safety (topics index)"
+    url: "https://www.nwcg.gov/6-minutes-for-safety/topics/all"
+    type: html
+    priority: 0
+    chunking: "by_page"
+
+  - id: nwcg_6mfs_lces_comms
+    title: "NWCG 6MFS: Communications (LCES)"
+    url: "https://www.nwcg.gov/6mfs/fire-communication/communications-lces"
+    type: html
+    priority: 0
+    chunking: "by_section"
+
+  - id: nwcg_aar_part1
+    title: "NWCG 6MFS: After Action Review (AAR) Part 1"
+    url: "https://www.nwcg.gov/6mfs/fire-communication/after-action-review-aar-part-1"
+    type: html
+    priority: 0
+    chunking: "by_section"
+
+  - id: nifc_redbook_2025
+    title: "NIFC Red Book (Interagency Standards for Fire & Fire Aviation Ops) - Jan 2025"
+    url: "https://www.nifc.gov/sites/default/files/redbook-files/RedBook_Final.pdf"
+    type: pdf
+    priority: 1
+    chunking: "by_toc_chapter"
+
+  # --- Tier 1 (Institutional memory) ---
+  - id: llc_irdb_search
+    title: "Wildland Fire Lessons Learned Center - Incident Review Database"
+    url: "https://lessons.wildfire.gov/search-irdb"
+    type: html
+    priority: 1
+    chunking: "by_page"
+    note: "Use to pick 10-30 specific reviews/FLAs to ingest as PDFs."
+
+  - id: llc_incident_review_summary_2024
+    title: "LLC Incident Review Summary (2024)"
+    url: "https://lessonslearned-prod-media-bucket.s3.us-gov-west-1.amazonaws.com/s3fs-public/summary/2024_Incident%20Review%20Summary.pdf"
+    type: pdf
+    priority: 1
+    chunking: "by_heading"
+
+  - id: llc_fla_guide_2024
+    title: "Facilitated Learning Analysis (FLA) Implementation Guide (2024)"
+    url: "https://lessonslearned-prod-media-bucket.s3.us-gov-west-1.amazonaws.com/2024-06/FLA%20Learning%20Review%20Guide%202020_0.pdf"
+    type: pdf
+    priority: 2
+    chunking: "by_heading"
+
+  - id: safenet_protocols
+    title: "SAFENET Protocols (NIFC)"
+    url: "https://safenet.nifc.gov/protocols.cfm"
+    type: html
+    priority: 2
+    chunking: "by_section"
+
+  # --- California terminology / triggers ---
+  - id: ca_evac_order_warning
+    title: "California Evacuation Order vs Warning terminology (Cal OES / CA resources)"
+    url: "https://www.caloes.ca.gov/cal-oes-divisions/communications/cal-alerts/"
+    type: html
+    priority: 2
+    chunking: "by_section"
+
+  - id: nws_red_flag_definitions
+    title: "NWS Fire Weather Watch / Red Flag Warning definitions"
+    url: "https://www.weather.gov/"
+    type: html
+    priority: 2
+    chunking: "manual_select_pages"
+

@@ -9,6 +9,8 @@ A wildfire incident commander decision support tool that provides:
 - **Trigger-based updates** (wind shift, time-to-impact, communities at risk)
 - **Scenario Mode** with 3 preloaded incidents for reliable demos
 - **Exportable Incident Brief** (copy/print)
+- **Live Mode** (NASA FIRMS satellite detections clustered into “fire events”)
+- **Chat Ops** (incident-aware chatbot grounded in tools + local doctrine KB)
 
 ## Quick Start
 
@@ -31,6 +33,10 @@ Open [http://localhost:3000](http://localhost:3000).
 | Variable | Required | Description |
 |---|---|---|
 | `NEXT_PUBLIC_MAPBOX_TOKEN` | Yes | Mapbox GL JS access token |
+| `FIRMS_MAP_KEY` | For Live Mode | NASA FIRMS API key (satellite hotspots) |
+| `ANTHROPIC_API_KEY` | For Chat/AI | Anthropic Claude API key |
+| `AI_INSIGHTS_ENABLED` | Optional | Set `true` to enable AI insights panel |
+| `AI_MODEL` | Optional | Model name (default: `claude-sonnet-4-5`) |
 
 ## Preloaded Scenarios
 
@@ -46,7 +52,33 @@ Open [http://localhost:3000](http://localhost:3000).
 - **Map:** Mapbox GL JS (basemap) + Deck.gl (data layers)
 - **Backend:** Next.js API route handlers (no database needed)
 - **Weather:** Open-Meteo API (free, no key required)
+- **Live incidents:** NASA FIRMS (hotspots) + clustering (+ optional NWS enrichment)
 - **Tests:** Vitest
+
+## Chat Ops + KB (local RAG)
+
+The Chat tab is **incident-aware** and should cite sources:
+- Computed facts: `[tool:TOOL_NAME]` (calls your own deterministic endpoints)
+- Doctrine snippets: `[KB:doc#chunk]` (local knowledge base)
+
+### Add doctrine sources
+
+1) Put `.md` / `.txt` files into `kb_sources/`
+2) Generate the index:
+
+```bash
+npm run ingest-kb
+```
+
+3) KB search endpoint:
+- `POST /api/kb/search` `{ "query": "...", "k": 5 }`
+
+## Live Mode (FIRMS)
+
+Live Mode uses NASA FIRMS hotspot detections, clusters them into “fire events,” and renders them as a satellite activity layer.
+
+Endpoint:
+- `GET /api/fires/live`
 
 ## Project Structure
 
@@ -112,7 +144,7 @@ spreadRate = baseRate × windFactor × humidityFactor × fuelFactor
 ## Running Tests
 
 ```bash
-npx vitest run
+npm test
 ```
 
 ## 90-Second Demo Script
