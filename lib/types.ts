@@ -185,6 +185,8 @@ export interface NwsEnrichment {
 
 export interface EnrichedIncident {
   incident: Incident;
+  /** Source of this incident data */
+  source: "calfire" | "arcgis" | "merged";
   calfire: {
     acres: number | null;
     containmentPct: number | null;
@@ -192,7 +194,18 @@ export interface EnrichedIncident {
     isActive: boolean;
     url: string;
     updatedAt: string;
-  };
+  } | null;
+  /** ArcGIS perimeter data (when available from FIRIS/WFIGS) */
+  perimeter: {
+    geometry: {
+      type: "Polygon";
+      coordinates: number[][][];
+    } | null;
+    acres: number | null;
+    displayStatus: string;
+    source: string;
+    incidentNumber: string | null;
+  } | null;
   nws: NwsEnrichment | null;
   /** Default resources for live incidents (estimated) */
   resources: Resources;

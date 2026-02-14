@@ -72,8 +72,11 @@ export default function IncidentList({
       </CardHeader>
       <CardContent className="px-2 pb-2 space-y-1 max-h-[50vh] overflow-y-auto scrollbar-thin">
         {incidents.map((enriched) => {
-          const { incident, calfire, nws } = enriched;
+          const { incident, calfire, nws, perimeter, source } = enriched;
           const isSelected = selectedId === incident.id;
+          const acres = calfire?.acres ?? perimeter?.acres ?? null;
+          const county = calfire?.county ?? null;
+          const updatedAt = calfire?.updatedAt ?? null;
 
           return (
             <button
@@ -91,6 +94,16 @@ export default function IncidentList({
                     <span className="text-xs font-semibold text-white truncate">
                       {incident.name}
                     </span>
+                    {perimeter?.geometry && (
+                      <Badge className="bg-green-800 text-[9px] px-1 py-0 shrink-0">
+                        PERIM
+                      </Badge>
+                    )}
+                    {perimeter?.displayStatus === "Active" && (
+                      <Badge className="bg-red-700 text-[9px] px-1 py-0 shrink-0">
+                        ACTIVE
+                      </Badge>
+                    )}
                     {nws?.hasRedFlagWarning && (
                       <Badge className="bg-red-700 text-[9px] px-1 py-0 shrink-0">
                         RED FLAG
@@ -103,24 +116,31 @@ export default function IncidentList({
                     )}
                   </div>
                   <div className="flex items-center gap-2 mt-0.5">
-                    {calfire.acres != null && (
+                    {acres != null && (
                       <span className="text-[10px] text-zinc-400">
-                        {calfire.acres.toLocaleString()} ac
+                        {acres.toLocaleString()} ac
                       </span>
                     )}
-                    {calfire.containmentPct != null && (
+                    {calfire?.containmentPct != null && (
                       <span className="text-[10px] text-zinc-400">
                         {calfire.containmentPct}% cont.
                       </span>
                     )}
-                    <span className="text-[10px] text-zinc-500">
-                      {calfire.county}
+                    {county && (
+                      <span className="text-[10px] text-zinc-500">
+                        {county}
+                      </span>
+                    )}
+                    <span className="text-[9px] text-zinc-600">
+                      {source === "merged" ? "CAL+ArcGIS" : source === "arcgis" ? "ArcGIS" : "CAL FIRE"}
                     </span>
                   </div>
                 </div>
-                <span className="text-[10px] text-zinc-500 shrink-0 mt-0.5">
-                  {formatTimeAgo(calfire.updatedAt)}
-                </span>
+                {updatedAt && (
+                  <span className="text-[10px] text-zinc-500 shrink-0 mt-0.5">
+                    {formatTimeAgo(updatedAt)}
+                  </span>
+                )}
               </div>
             </button>
           );

@@ -64,6 +64,7 @@ export default function Home() {
   // ===== Live-specific display data =====
   const [liveCalfire, setLiveCalfire] = useState<EnrichedIncident["calfire"] | null>(null);
   const [liveNws, setLiveNws] = useState<NwsEnrichment | null>(null);
+  const [livePerimeter, setLivePerimeter] = useState<EnrichedIncident["perimeter"] | null>(null);
 
   // ===== UI state =====
   const [windShiftEnabled, setWindShiftEnabled] = useState(false);
@@ -123,6 +124,7 @@ export default function Home() {
           setAssets(updated.assets);
           setLiveCalfire(updated.calfire);
           setLiveNws(updated.nws);
+          setLivePerimeter(updated.perimeter);
         }
       }
     } catch (err) {
@@ -158,6 +160,7 @@ export default function Home() {
         // Restore scenario state
         setLiveCalfire(null);
         setLiveNws(null);
+        setLivePerimeter(null);
         setSelectedLiveIncident(null);
 
         const scenario = scenarios.find((s) => s.id === selectedScenarioId);
@@ -211,6 +214,7 @@ export default function Home() {
       setAssets(enriched.assets);
       setLiveCalfire(enriched.calfire);
       setLiveNws(enriched.nws);
+      setLivePerimeter(enriched.perimeter);
 
       // Clear stale computed data
       setEnvelopes([]);
@@ -389,7 +393,12 @@ export default function Home() {
       {/* Main content: map + overlays */}
       <div className="flex-1 relative">
         {/* Map */}
-        <MapView incident={incident} envelopes={envelopes} assets={assets} />
+        <MapView
+          incident={incident}
+          envelopes={envelopes}
+          assets={assets}
+          perimeterPolygon={mode === "live" ? livePerimeter?.geometry ?? null : null}
+        />
 
         {/* Left panel */}
         <div className="absolute top-4 left-4 z-10 w-72 space-y-2 max-h-[calc(100vh-120px)] overflow-y-auto scrollbar-thin">
@@ -409,6 +418,7 @@ export default function Home() {
             weather={weather}
             calfire={mode === "live" ? liveCalfire : undefined}
             nws={mode === "live" ? liveNws : undefined}
+            perimeter={mode === "live" ? livePerimeter : undefined}
           />
 
           {/* Explain panel */}

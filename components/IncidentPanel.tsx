@@ -17,6 +17,14 @@ interface IncidentPanelProps {
   } | null;
   /** NWS enrichment (only in live mode) */
   nws?: NwsEnrichment | null;
+  /** ArcGIS perimeter info (only in live mode) */
+  perimeter?: {
+    geometry: { type: "Polygon"; coordinates: number[][][] } | null;
+    acres: number | null;
+    displayStatus: string;
+    source: string;
+    incidentNumber: string | null;
+  } | null;
 }
 
 function WindArrow({ degrees }: { degrees: number }) {
@@ -38,6 +46,7 @@ export default function IncidentPanel({
   weather,
   calfire,
   nws,
+  perimeter,
 }: IncidentPanelProps) {
   if (!incident) {
     return (
@@ -133,6 +142,38 @@ export default function IncidentPanel({
                 CAL FIRE page
               </a>
             )}
+          </div>
+        )}
+
+        {/* ArcGIS Perimeter info (live mode) */}
+        {perimeter && (
+          <div className="flex flex-wrap gap-x-3 gap-y-1 text-xs">
+            <Badge
+              variant="outline"
+              className={`text-[10px] px-1.5 py-0 ${
+                perimeter.displayStatus === "Active"
+                  ? "border-red-500 text-red-400"
+                  : "border-zinc-600 text-zinc-400"
+              }`}
+            >
+              {perimeter.displayStatus}
+            </Badge>
+            {perimeter.acres != null && perimeter.acres > 0 && (
+              <div className="flex items-center gap-1">
+                <span className="text-zinc-400">Perimeter:</span>
+                <span className="text-orange-400 font-semibold">
+                  {perimeter.acres.toFixed(1)} acres
+                </span>
+              </div>
+            )}
+            {perimeter.geometry && (
+              <Badge className="bg-green-800 text-[10px] px-1.5 py-0">
+                HAS POLYGON
+              </Badge>
+            )}
+            <span className="text-zinc-600 text-[10px]">
+              via {perimeter.source}
+            </span>
           </div>
         )}
 

@@ -25,13 +25,20 @@ const PRIORITY_COLORS: Record<string, [number, number, number]> = {
   low: [76, 175, 80],
 };
 
+interface PerimeterPolygon {
+  type: "Polygon";
+  coordinates: number[][][];
+}
+
 interface MapViewProps {
   incident: Incident | null;
   envelopes: SpreadEnvelope[];
   assets: Asset[];
+  /** ArcGIS fire perimeter polygon (live mode) */
+  perimeterPolygon?: PerimeterPolygon | null;
 }
 
-export default function MapView({ incident, envelopes, assets }: MapViewProps) {
+export default function MapView({ incident, envelopes, assets, perimeterPolygon }: MapViewProps) {
   const mapContainer = useRef<HTMLDivElement>(null);
   const mapRef = useRef<mapboxgl.Map | null>(null);
   const overlayRef = useRef<MapboxOverlay | null>(null);
@@ -122,6 +129,27 @@ export default function MapView({ incident, envelopes, assets }: MapViewProps) {
 
     const layers: (GeoJsonLayer | ScatterplotLayer)[] = [];
 
+    // ArcGIS fire perimeter polygon (render behind everything)
+    if (perimeterPolygon) {
+      layers.push(
+        new GeoJsonLayer({
+          id: "fire-perimeter",
+          data: {
+            type: "Feature",
+            geometry: perimeterPolygon,
+            properties: { type: "perimeter" },
+          },
+          filled: true,
+          stroked: true,
+          getFillColor: [255, 69, 0, 60], // red-orange, very translucent
+          getLineColor: [255, 69, 0, 220],
+          getLineWidth: 3,
+          lineWidthUnits: "pixels",
+          pickable: true,
+        })
+      );
+    }
+
     // Spread envelope layers (render in reverse so 3h is behind 1h)
     const sortedEnvelopes = [...envelopes].sort((a, b) => b.tHours - a.tHours);
     
@@ -206,7 +234,7 @@ export default function MapView({ incident, envelopes, assets }: MapViewProps) {
     }
 
     overlayRef.current.setProps({ layers });
-  }, [incident, envelopes, assets, mapLoaded]);
+  }, [incident, envelopes, assets, perimeterPolygon, mapLoaded]);
 
   // Animate pulse + update layers
   useEffect(() => {
