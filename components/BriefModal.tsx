@@ -86,7 +86,6 @@ export default function BriefModal({
       <DialogContent className="bg-zinc-900 border-zinc-700 text-white max-w-2xl max-h-[80vh] overflow-hidden flex flex-col">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2 text-base">
-            <span>📋</span>
             Incident Brief: {incidentName}
           </DialogTitle>
         </DialogHeader>
@@ -108,7 +107,7 @@ export default function BriefModal({
             onClick={handleCopy}
             className="text-xs border-zinc-700 text-zinc-400 hover:text-white"
           >
-            {copied ? "✓ Copied!" : "📋 Copy"}
+            {copied ? "Copied!" : "Copy"}
           </Button>
           <Button
             variant="outline"
@@ -116,7 +115,7 @@ export default function BriefModal({
             onClick={handlePrint}
             className="text-xs border-zinc-700 text-zinc-400 hover:text-white"
           >
-            🖨 Print
+            Print
           </Button>
           <Button
             variant="ghost"

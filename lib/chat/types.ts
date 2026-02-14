@@ -30,7 +30,7 @@ export type ChatMessage = {
 };
 
 export type ActiveIncidentContext = {
-  mode: "scenario" | "live";
+  mode: "live";
   incidentId: string;
   name: string;
   lat: number;

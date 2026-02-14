@@ -59,19 +59,18 @@ export default function IncidentPanel({
 }: IncidentPanelProps) {
   if (!incident) {
     return (
-      <Card className="bg-zinc-900/90 border-zinc-700 text-white backdrop-blur-sm">
+      <Card className="ic-card text-white">
         <CardContent className="p-4">
-          <p className="text-zinc-400 text-sm">Select a scenario or live incident to begin.</p>
+          <p className="text-zinc-400 text-sm">Select a live incident to begin.</p>
         </CardContent>
       </Card>
     );
   }
 
   return (
-    <Card className="bg-zinc-900/90 border-zinc-700 text-white backdrop-blur-sm">
+    <Card className="ic-card text-white">
       <CardHeader className="pb-2 pt-3 px-4">
         <div className="flex items-center gap-2">
-          <span className="text-orange-500 text-xl">🔥</span>
           <div className="flex-1 min-w-0">
             <CardTitle className="text-base font-bold truncate">
               {incident.name}
@@ -113,43 +112,61 @@ export default function IncidentPanel({
       <CardContent className="px-4 pb-3 space-y-3">
         {/* CAL FIRE info (live mode) */}
         {calfire && (
-          <div className="flex flex-wrap gap-x-3 gap-y-1 text-xs">
-            {calfire.acres != null && (
-              <div className="flex items-center gap-1">
-                <span className="text-zinc-400">Acres:</span>
-                <span className="text-orange-400 font-semibold">
-                  {calfire.acres.toLocaleString()}
-                </span>
-              </div>
-            )}
-            {calfire.containmentPct != null && (
-              <div className="flex items-center gap-1">
-                <span className="text-zinc-400">Contained:</span>
-                <span
-                  className={`font-semibold ${
-                    calfire.containmentPct >= 80
-                      ? "text-green-400"
-                      : calfire.containmentPct >= 50
-                        ? "text-yellow-400"
-                        : "text-red-400"
-                  }`}
+          <div className="space-y-2">
+            <div className="flex flex-wrap gap-x-3 gap-y-1 text-xs">
+              {calfire.acres != null && (
+                <div className="flex items-center gap-1.5">
+                  <span className="ic-label">Acres</span>
+                  <span className="text-orange-400 font-bold text-sm tabular-nums">
+                    {calfire.acres.toLocaleString()}
+                  </span>
+                </div>
+              )}
+              {calfire.county && (
+                <span className="text-zinc-500 text-xs">{calfire.county} County</span>
+              )}
+              {calfire.url && (
+                <a
+                  href={calfire.url}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-blue-400 hover:text-blue-300 underline text-xs"
                 >
-                  {calfire.containmentPct}%
-                </span>
+                  CAL FIRE
+                </a>
+              )}
+            </div>
+
+            {/* Enhanced Containment Display */}
+            {calfire.containmentPct != null && (
+              <div className="bg-zinc-800/50 rounded-lg p-2.5 border border-zinc-700/50">
+                <div className="flex items-center justify-between mb-1.5">
+                  <span className="ic-label">CONTAINMENT</span>
+                  <span
+                    className={`ic-value-critical tabular-nums ${
+                      calfire.containmentPct >= 80
+                        ? "text-green-400"
+                        : calfire.containmentPct >= 50
+                          ? "text-yellow-400"
+                          : "text-red-400"
+                    }`}
+                  >
+                    {calfire.containmentPct}%
+                  </span>
+                </div>
+                <div className="h-2 bg-zinc-900 rounded-full overflow-hidden border border-zinc-700/50">
+                  <div
+                    className={`h-full transition-all duration-500 ${
+                      calfire.containmentPct >= 80
+                        ? "bg-gradient-to-r from-green-600 to-green-400"
+                        : calfire.containmentPct >= 50
+                          ? "bg-gradient-to-r from-yellow-600 to-yellow-400"
+                          : "bg-gradient-to-r from-red-600 to-red-400"
+                    }`}
+                    style={{ width: `${calfire.containmentPct}%` }}
+                  />
+                </div>
               </div>
-            )}
-            {calfire.county && (
-              <span className="text-zinc-500">{calfire.county} County</span>
-            )}
-            {calfire.url && (
-              <a
-                href={calfire.url}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="text-blue-400 hover:text-blue-300 underline"
-              >
-                CAL FIRE page
-              </a>
             )}
           </div>
         )}
@@ -267,8 +284,8 @@ export default function IncidentPanel({
         {/* NWS Forecast summary */}
         {nws?.forecastSummary && (
           <div className="border-t border-zinc-700 pt-2">
-            <div className="text-xs font-semibold text-zinc-300 mb-1 flex items-center gap-1">
-              <span>📡</span> NWS Forecast
+            <div className="text-xs font-semibold text-zinc-300 mb-1">
+              NWS Forecast
             </div>
             <p className="text-[11px] text-zinc-400 leading-relaxed">
               {nws.forecastSummary}
@@ -279,8 +296,8 @@ export default function IncidentPanel({
         {/* Weather */}
         {weather && (
           <div className="border-t border-zinc-700 pt-2">
-            <div className="text-xs font-semibold text-zinc-300 mb-1.5 flex items-center gap-1">
-              <span>🌬️</span> Current Weather
+            <div className="text-xs font-semibold text-zinc-300 mb-1.5">
+              Current Weather
             </div>
             <div className="grid grid-cols-2 gap-x-4 gap-y-1 text-xs">
               <div className="flex justify-between">
@@ -299,7 +316,7 @@ export default function IncidentPanel({
               <div className="flex justify-between">
                 <span className="text-zinc-400">Temp</span>
                 <span className="text-zinc-200">
-                  {weather.temperatureC.toFixed(0)}°C
+                  {((weather.temperatureC * 9/5) + 32).toFixed(0)}°F
                 </span>
               </div>
               <div className="flex justify-between">

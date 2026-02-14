@@ -134,7 +134,7 @@ export default function MapView({ incident, envelopes, assets, perimeterPolygon,
 
       map.on("load", () => {
         console.log("[MapView] Map loaded successfully");
-        
+
         // Create Deck.gl overlay after map is loaded
         try {
           const overlay = new MapboxOverlay({
@@ -145,7 +145,7 @@ export default function MapView({ incident, envelopes, assets, perimeterPolygon,
         } catch (e) {
           console.warn("[MapView] Deck.gl overlay failed, map will work without it:", e);
         }
-        
+
         setMapLoaded(true);
       });
 
@@ -286,7 +286,7 @@ export default function MapView({ incident, envelopes, assets, perimeterPolygon,
       // Create and add marker to map
       const marker = new mapboxgl.Marker({ element: markerEl })
         .setLngLat([lon, lat])
-        .addTo(mapRef.current);
+        .addTo(mapRef.current!);
 
       // Store marker reference
       markersRef.current.push(marker);

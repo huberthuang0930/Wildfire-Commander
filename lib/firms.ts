@@ -23,23 +23,39 @@ export const FIRMS_SOURCES = [
 
 export type FirmsSource = (typeof FIRMS_SOURCES)[number];
 
-// ===== In-memory cache =====
+// ===== In-memory cache with stale-while-revalidate =====
 interface CacheEntry<T> {
   data: T;
   timestamp: number;
 }
 
 const firmsCache: Record<string, CacheEntry<FirmsHotspot[]>> = {};
-const CACHE_TTL_MS = 3 * 60 * 1000; // 3 minutes
+const inflightRequests = new Map<string, Promise<FirmsHotspot[]>>(); // Request deduplication
+const CACHE_TTL_MS = 10 * 60 * 1000; // 10 minutes (extended from 3 for better performance)
+const STALE_WHILE_REVALIDATE_MS = 15 * 60 * 1000; // Serve stale data for up to 15 minutes
 
-function getCached(key: string): FirmsHotspot[] | null {
+interface CacheResult {
+  data: FirmsHotspot[] | null;
+  isStale: boolean;
+}
+
+function getCached(key: string): CacheResult {
   const entry = firmsCache[key];
-  if (!entry) return null;
-  if (Date.now() - entry.timestamp > CACHE_TTL_MS) {
+  if (!entry) return { data: null, isStale: false };
+
+  const age = Date.now() - entry.timestamp;
+
+  // If data is too old, remove and return null
+  if (age > STALE_WHILE_REVALIDATE_MS) {
     delete firmsCache[key];
-    return null;
+    return { data: null, isStale: false };
   }
-  return entry.data;
+
+  // Return data and indicate if it's stale (for background refresh)
+  return {
+    data: entry.data,
+    isStale: age > CACHE_TTL_MS
+  };
 }
 
 function setCache(key: string, data: FirmsHotspot[]): void {
@@ -81,15 +97,59 @@ async function fetchSingleSource(
 ): Promise<FirmsHotspot[]> {
   const cacheKey = `firms_${source}_${bbox}_${days}`;
   const cached = getCached(cacheKey);
-  if (cached) {
-    console.log(`[FIRMS] Cache hit for ${source} (${cached.length} pts)`);
-    return cached;
+
+  if (cached.data) {
+    if (!cached.isStale) {
+      console.log(`[FIRMS] Cache hit for ${source} (${cached.data.length} pts, fresh)`);
+      return cached.data;
+    } else {
+      console.log(`[FIRMS] Cache hit for ${source} (${cached.data.length} pts, stale - serving while revalidating)`);
+      // Return stale data immediately, refresh in background (fire-and-forget)
+      // Only start background refresh if not already in flight
+      if (!inflightRequests.has(cacheKey)) {
+        const promise = fetchAndCache(mapKey, source, bbox, days, cacheKey)
+          .catch((err) => {
+            console.warn(`[FIRMS] Background refresh failed for ${source}:`, err.message);
+            return []; // Return empty on error for background refresh
+          })
+          .finally(() => {
+            inflightRequests.delete(cacheKey);
+          });
+        inflightRequests.set(cacheKey, promise);
+      }
+      return cached.data;
+    }
   }
 
+  // Check if there's already a request in flight for this key (request deduplication)
+  const existingRequest = inflightRequests.get(cacheKey);
+  if (existingRequest) {
+    console.log(`[FIRMS] Request already in flight for ${source}, waiting...`);
+    return existingRequest;
+  }
+
+  // No cache and no inflight request - fetch immediately
+  const promise = fetchAndCache(mapKey, source, bbox, days, cacheKey)
+    .finally(() => {
+      inflightRequests.delete(cacheKey);
+    });
+
+  inflightRequests.set(cacheKey, promise);
+  return promise;
+}
+
+// Separate function for actual fetching and caching
+async function fetchAndCache(
+  mapKey: string,
+  source: string,
+  bbox: string,
+  days: number,
+  cacheKey: string
+): Promise<FirmsHotspot[]> {
   const url = `${FIRMS_BASE}/${mapKey}/${source}/${bbox}/${days}`;
   console.log(`[FIRMS] Fetching: ${url.substring(0, 100)}...`);
 
-  const res = await fetch(url, { cache: "no-store" });
+  const res = await fetch(url, { cache: "no-store", signal: AbortSignal.timeout(15000) });
 
   if (!res.ok) {
     const text = await res.text().catch(() => "");

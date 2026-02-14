@@ -163,22 +163,6 @@ export interface RecommendationsResult {
   riskScore: RiskScore;
 }
 
-// ===== Scenario Types =====
-
-export interface Scenario {
-  id: string;
-  name: string;
-  description: string;
-  incident: Incident;
-  resources: Resources;
-  assets: Asset[];
-  defaultWindShift?: WindShift;
-}
-
-export interface ScenariosData {
-  scenarios: Scenario[];
-}
-
 // ===== AI Insights Types =====
 
 export interface AIInsight {

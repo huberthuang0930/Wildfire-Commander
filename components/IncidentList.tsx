@@ -33,7 +33,7 @@ export default function IncidentList({
 }: IncidentListProps) {
   if (loading) {
     return (
-      <Card className="bg-zinc-900/90 border-zinc-700 text-white backdrop-blur-sm">
+      <Card className="ic-card text-white">
         <CardContent className="p-4">
           <div className="flex items-center gap-2 text-zinc-400 text-sm">
             <span className="animate-pulse">Loading satellite fire detections...</span>
@@ -45,7 +45,7 @@ export default function IncidentList({
 
   if (incidents.length === 0) {
     return (
-      <Card className="bg-zinc-900/90 border-zinc-700 text-white backdrop-blur-sm">
+      <Card className="ic-card text-white">
         <CardContent className="p-4">
           <p className="text-zinc-400 text-sm">
             No active fire detections found. Satellite data updates every ~3 hours.
@@ -56,11 +56,11 @@ export default function IncidentList({
   }
 
   return (
-    <Card className="bg-zinc-900/90 border-zinc-700 text-white backdrop-blur-sm">
+    <Card className="ic-card text-white">
       <CardHeader className="pb-2 pt-3 px-4">
         <div className="flex items-center justify-between">
           <CardTitle className="text-sm font-bold flex items-center gap-2">
-            <span className="text-red-500 animate-pulse">&#9679;</span> Live Fire Detections
+            Live Fire Detections
           </CardTitle>
           <Badge
             variant="outline"
@@ -73,7 +73,7 @@ export default function IncidentList({
           NASA FIRMS satellite hotspots (VIIRS)
         </p>
       </CardHeader>
-      <CardContent className="px-2 pb-2 space-y-1 max-h-[50vh] overflow-y-auto scrollbar-thin">
+      <CardContent className="px-2 pb-2 space-y-1 max-h-[200px] overflow-y-auto scrollbar-thin">
         {incidents.map((enriched) => {
           const { incident, calfire, nws, perimeter, firms, source } = enriched;
           const isSelected = selectedId === incident.id;

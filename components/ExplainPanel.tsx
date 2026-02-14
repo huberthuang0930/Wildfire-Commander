@@ -42,11 +42,10 @@ export default function ExplainPanel({ riskScore, spreadExplain }: ExplainPanelP
           : "text-green-400";
 
   return (
-    <Card className="bg-zinc-900/90 border-zinc-700 text-white backdrop-blur-sm">
+    <Card className="ic-card text-white">
       <CardContent className="p-3">
         <div className="flex items-center justify-between mb-2">
           <div className="flex items-center gap-2">
-            <span className="text-sm">📊</span>
             <h3 className="text-xs font-semibold text-zinc-300 uppercase tracking-wider">
               Risk Assessment
             </h3>

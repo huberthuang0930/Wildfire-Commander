@@ -12,11 +12,13 @@ import type {
   ActionCard,
   RiskScore,
   Brief,
+  WindShift,
   EnrichedIncident,
   NwsEnrichment,
   AIInsight,
 } from "@/lib/types";
 import IncidentPanel from "@/components/IncidentPanel";
+import ActionCards from "@/components/ActionCards";
 import ExplainPanel from "@/components/ExplainPanel";
 import AIInsightsPanel from "@/components/AIInsightsPanel";
 import ControlsBar from "@/components/ControlsBar";
@@ -68,6 +70,7 @@ export default function Home() {
   const [firmsHotspots, setFirmsHotspots] = useState<{ lat: number; lon: number; frp: number }[]>([]);
 
   // ===== UI state =====
+  const [windShiftEnabled, setWindShiftEnabled] = useState(false);
   const [aiEnabled, setAIEnabled] = useState(true);
   const [briefOpen, setBriefOpen] = useState(false);
   const [briefMarkdown, setBriefMarkdown] = useState<string | null>(null);
@@ -87,7 +90,7 @@ export default function Home() {
     setLiveLoading(true);
     try {
       console.log('[Live Mode] Fetching NASA FIRMS fire data for California...');
-      const res = await fetch("/api/fires/live?days=2&sources=VIIRS_SNPP_NRT,VIIRS_NOAA20_NRT&limit=20&nwsEnrich=3&bbox=-124.5,32.5,-114.6,42.0");
+      const res = await fetch("/api/fires/live?days=2&sources=VIIRS_SNPP_NRT,VIIRS_NOAA20_NRT&limit=20&nwsEnrich=3&bbox=-124.5,32.5,-114.1,42.1");
       const data = await res.json();
       const incidents: EnrichedIncident[] = data.incidents || [];
       console.log(`[Live Mode] Loaded ${incidents.length} fire incidents from NASA FIRMS`);
@@ -126,10 +129,82 @@ export default function Home() {
     }
   }, [selectedLiveIncident]);
 
-  // ===== Load live incidents on mount =====
+  // ===== Load live incidents when switching to live mode =====
   useEffect(() => {
-    fetchLiveIncidents();
-  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+    if (mode === "live") {
+      fetchLiveIncidents();
+    }
+  }, [mode]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // ===== Mode toggle handler =====
+  const handleToggleMode = useCallback(() => {
+    setMode((prev) => {
+      const next = prev === "scenario" ? "live" : "scenario";
+
+      // Clear computed data when switching
+      setEnvelopes([]);
+      setCards([]);
+      setRiskScore(null);
+      setBrief(null);
+      setSpreadExplain(null);
+      setWeather(null);
+      setChangesBanner(null);
+      setAIInsights([]);
+      setAIHasRun(false);
+      prevRiskRef.current = null;
+
+      if (next === "scenario") {
+        // Restore scenario state
+        setLiveCalfire(null);
+        setLiveNws(null);
+        setLivePerimeter(null);
+        setLiveFirms(null);
+        setFirmsHotspots([]);
+        setSelectedLiveIncident(null);
+
+        const scenario = scenarios.find((s) => s.id === selectedScenarioId);
+        if (scenario) {
+          setIncident(scenario.incident);
+          setResources(scenario.resources);
+          setAssets(scenario.assets);
+        }
+      } else {
+        // Live mode — clear incident until user picks one
+        setIncident(null);
+        setResources(null);
+        setAssets([]);
+      }
+
+      return next;
+    });
+  }, [scenarios, selectedScenarioId]);
+
+  // ===== Select scenario handler =====
+  const handleSelectScenario = useCallback(
+    (id: string) => {
+      const scenario = scenarios.find((s) => s.id === id);
+      if (!scenario) return;
+
+      setSelectedScenarioId(id);
+      setIncident(scenario.incident);
+      setResources(scenario.resources);
+      setAssets(scenario.assets);
+      setWindShiftEnabled(scenario.defaultWindShift?.enabled ?? false);
+
+      // Clear stale data
+      setEnvelopes([]);
+      setCards([]);
+      setRiskScore(null);
+      setBrief(null);
+      setSpreadExplain(null);
+      setWeather(null);
+      setChangesBanner(null);
+      setAIInsights([]);
+      setAIHasRun(false);
+      prevRiskRef.current = null;
+    },
+    [scenarios]
+  );
 
   // ===== Select live incident handler =====
   const handleSelectLiveIncident = useCallback(
@@ -158,20 +233,6 @@ export default function Home() {
     []
   );
 
-  // ===== Map marker click handler =====
-  const handleMapMarkerClick = useCallback(
-    (clickedIncident: { id: string; name: string; lat: number; lon: number }) => {
-      // Find the full enriched incident from the list
-      const enriched = liveIncidents.find(
-        (inc) => inc.incident.id === clickedIncident.id
-      );
-      if (enriched) {
-        handleSelectLiveIncident(enriched);
-      }
-    },
-    [liveIncidents, handleSelectLiveIncident]
-  );
-
   // ===== Fetch weather + spread + recommendations =====
   const refreshData = useCallback(async () => {
     if (!incident || !resources) return;
@@ -184,7 +245,17 @@ export default function Home() {
       const weatherData: Weather = await weatherRes.json();
       setWeather(weatherData);
 
-      // 2. Compute spread (no wind shift in live mode)
+      // 2. Get current scenario for wind shift (only in scenario mode)
+      let windShift: WindShift | undefined;
+      if (mode === "scenario") {
+        const currentScenario = scenarios.find((s) => s.id === selectedScenarioId);
+        windShift =
+          windShiftEnabled && currentScenario?.defaultWindShift
+            ? currentScenario.defaultWindShift
+            : undefined;
+      }
+
+      // 3. Compute spread
       const spreadRes = await fetch("/api/spread", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -192,13 +263,14 @@ export default function Home() {
           incident,
           weather: weatherData,
           horizonHours: 3,
+          windShift,
         }),
       });
       const spreadData: SpreadResult = await spreadRes.json();
       setEnvelopes(spreadData.envelopes);
       setSpreadExplain(spreadData.explain);
 
-      // 3. Get recommendations
+      // 4. Get recommendations
       const recsRes = await fetch("/api/recommendations", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -209,6 +281,7 @@ export default function Home() {
           assets,
           resources,
           spreadRateKmH: spreadData.explain.rateKmH,
+          windShift,
         }),
       });
       const recsData = await recsRes.json();
@@ -237,7 +310,7 @@ export default function Home() {
     } catch (err) {
       console.error("Error refreshing data:", err);
     }
-  }, [incident, resources, assets]);
+  }, [incident, resources, assets, scenarios, selectedScenarioId, windShiftEnabled, mode]);
 
   // ===== Initial data load when incident changes =====
   useEffect(() => {
@@ -257,7 +330,10 @@ export default function Home() {
 
     pollTimerRef.current = setInterval(() => {
       refreshData();
-      fetchLiveIncidents();
+      // Also refresh live incident list if in live mode
+      if (mode === "live") {
+        fetchLiveIncidents();
+      }
     }, POLL_INTERVAL_MS);
 
     return () => {
@@ -265,13 +341,15 @@ export default function Home() {
         clearInterval(pollTimerRef.current);
       }
     };
-  }, [incident?.id, refreshData, fetchLiveIncidents]);
+  }, [incident?.id, refreshData, mode, fetchLiveIncidents]);
 
   // ===== Refresh handler =====
   const handleRefresh = useCallback(() => {
     refreshData();
-    fetchLiveIncidents();
-  }, [refreshData, fetchLiveIncidents]);
+    if (mode === "live") {
+      fetchLiveIncidents();
+    }
+  }, [refreshData, mode, fetchLiveIncidents]);
 
   // ===== Manual AI insights trigger =====
   const handleRunAI = useCallback(async () => {
@@ -353,12 +431,23 @@ export default function Home() {
       setChatLoading(true);
 
       try {
+        const scenarioWindShift =
+          mode === "scenario"
+            ? scenarios.find((s) => s.id === selectedScenarioId)?.defaultWindShift
+            : undefined;
+        const windShift =
+          mode === "scenario" && windShiftEnabled && scenarioWindShift
+            ? scenarioWindShift
+            : null;
+
         const active = {
-          mode: "live",
+          mode,
           incidentId: incident.id,
           name: incident.name,
           lat: incident.lat,
           lon: incident.lon,
+          windShiftEnabled: mode === "scenario" ? windShiftEnabled : undefined,
+          windShift: mode === "scenario" ? windShift : undefined,
           incident,
           resources,
           assets,
@@ -402,6 +491,7 @@ export default function Home() {
     },
     [
       incident,
+      mode,
       resources,
       assets,
       weather,
@@ -411,6 +501,9 @@ export default function Home() {
       riskScore,
       brief,
       chatMessages,
+      scenarios,
+      selectedScenarioId,
+      windShiftEnabled,
     ]
   );
 
@@ -418,6 +511,13 @@ export default function Home() {
     <div className="h-screen w-screen overflow-hidden bg-zinc-950 flex flex-col">
       {/* Top controls bar */}
       <ControlsBar
+        mode={mode}
+        onToggleMode={handleToggleMode}
+        scenarios={scenarios}
+        selectedScenarioId={selectedScenarioId}
+        onSelectScenario={handleSelectScenario}
+        windShiftEnabled={windShiftEnabled}
+        onToggleWindShift={() => setWindShiftEnabled((prev) => !prev)}
         aiEnabled={aiEnabled}
         onToggleAI={() => setAIEnabled((prev) => !prev)}
         onRefresh={handleRefresh}
@@ -434,61 +534,63 @@ export default function Home() {
           incident={incident}
           envelopes={envelopes}
           assets={assets}
-          perimeterPolygon={livePerimeter?.geometry ?? null}
-          firmsHotspots={firmsHotspots}
-          liveIncidents={liveIncidents}
-          selectedIncidentId={incident?.id}
-          onIncidentSelect={handleMapMarkerClick}
+          perimeterPolygon={mode === "live" ? livePerimeter?.geometry ?? null : null}
+          firmsHotspots={mode === "live" ? firmsHotspots : undefined}
+          liveIncidents={mode === "live" ? liveIncidents : undefined}
+          selectedIncidentId={mode === "live" ? incident?.id : undefined}
         />
 
-        {/* Left panel */}
+        {/* Left panel + AI Insights */}
         <div className="absolute top-4 left-4 z-10 w-72 space-y-2 max-h-[calc(100vh-120px)] overflow-y-auto scrollbar-thin">
-          {/* Show incident list */}
-          <IncidentList
-            incidents={liveIncidents}
-            selectedId={incident?.id ?? null}
-            onSelect={handleSelectLiveIncident}
-            loading={liveLoading}
-          />
+          {/* In live mode, show incident list */}
+          {mode === "live" && (
+            <IncidentList
+              incidents={liveIncidents}
+              selectedId={incident?.id ?? null}
+              onSelect={handleSelectLiveIncident}
+              loading={liveLoading}
+            />
+          )}
 
           {/* Incident details panel */}
           <IncidentPanel
             incident={incident}
             weather={weather}
-            calfire={liveCalfire}
-            nws={liveNws}
-            perimeter={livePerimeter}
-            firms={liveFirms}
+            calfire={mode === "live" ? liveCalfire : undefined}
+            nws={mode === "live" ? liveNws : undefined}
+            perimeter={mode === "live" ? livePerimeter : undefined}
+            firms={mode === "live" ? liveFirms : undefined}
           />
 
           {/* Explain panel */}
           <ExplainPanel riskScore={riskScore} spreadExplain={spreadExplain} />
+          <AIInsightsPanel
+            insights={aiInsights}
+            isLoading={aiLoading}
+            hasRun={aiHasRun}
+            onRunAI={handleRunAI}
+            aiEnabled={aiEnabled}
+            canRun={!!(incident && weather && riskScore && cards.length)}
+          />
         </div>
 
-        {/* Right panel: AI Advisor & Chat */}
+        {/* Right panel: Action Cards */}
         <div className="absolute top-4 right-4 z-10 w-80 max-h-[calc(100vh-120px)] overflow-y-auto scrollbar-thin">
-          <Tabs defaultValue="ai" className="w-full">
+          <Tabs defaultValue="cards" className="w-full">
             <TabsList className="w-full bg-zinc-900/90 border border-zinc-700">
-              <TabsTrigger value="ai" className="text-xs">
-                AI Advisor
+              <TabsTrigger value="cards" className="text-xs">
+                Action Cards
               </TabsTrigger>
               <TabsTrigger value="chat" className="text-xs">
-                AI Chat
+                Chat
               </TabsTrigger>
             </TabsList>
-            <TabsContent value="ai" className="mt-2">
-              <AIInsightsPanel
-                insights={aiInsights}
-                isLoading={aiLoading}
-                hasRun={aiHasRun}
-                onRunAI={handleRunAI}
-                aiEnabled={aiEnabled}
-                canRun={!!(incident && weather && riskScore && cards.length)}
-              />
+            <TabsContent value="cards" className="mt-2">
+              <ActionCards cards={cards} />
             </TabsContent>
             <TabsContent value="chat" className="mt-2">
               <ChatPanel
-                mode="live"
+                mode={mode}
                 activeIncidentName={incident?.name || ""}
                 messages={chatMessages}
                 isLoading={chatLoading}
@@ -501,7 +603,7 @@ export default function Home() {
         {/* Bottom center: Brief summary */}
         {brief && (
           <div className="absolute bottom-4 left-1/2 -translate-x-1/2 z-10 max-w-xl">
-            <div className="bg-gradient-to-br from-zinc-900/95 to-zinc-950/95 backdrop-blur-lg border border-zinc-700/50 shadow-2xl shadow-black/40 rounded-lg px-4 py-2">
+            <div className="bg-zinc-900/90 backdrop-blur-sm border border-zinc-700 rounded-lg px-4 py-2">
               <p className="text-xs text-zinc-300 text-center">
                 {brief.oneLiner}
               </p>

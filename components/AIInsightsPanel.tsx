@@ -18,13 +18,6 @@ interface AIInsightsPanelProps {
 function InsightCard({ insight, index }: { insight: AIInsight; index: number }) {
   const [showReasoning, setShowReasoning] = useState(false);
 
-  const icon =
-    insight.type === "warning"
-      ? "⚠️"
-      : insight.type === "recommendation"
-        ? "💡"
-        : "📊";
-
   const confidenceColor =
     insight.confidence === "high"
       ? "bg-green-500/20 text-green-300 border-green-500/30"
@@ -32,15 +25,28 @@ function InsightCard({ insight, index }: { insight: AIInsight; index: number }) 
         ? "bg-yellow-500/20 text-yellow-300 border-yellow-500/30"
         : "bg-gray-500/20 text-gray-300 border-gray-500/30";
 
+  const typeTitle =
+    insight.type === "warning"
+      ? "Critical Alert"
+      : insight.type === "recommendation"
+        ? "Recommended Action"
+        : "Situational Context";
+
+  const typeColor =
+    insight.type === "warning"
+      ? "text-red-400"
+      : insight.type === "recommendation"
+        ? "text-blue-400"
+        : "text-zinc-400";
+
   return (
     <div className="border-t border-zinc-700 pt-2 first:border-t-0 first:pt-0">
       <div className="flex items-start gap-2">
-        <span className="text-base shrink-0 mt-0.5">{icon}</span>
         <div className="flex-1 min-w-0">
-          <div className="flex items-start justify-between gap-2 mb-1">
-            <p className="text-xs font-medium text-zinc-200 leading-snug">
-              {insight.message}
-            </p>
+          <div className="flex items-center justify-between gap-2 mb-1">
+            <span className={`text-[10px] uppercase tracking-wider font-semibold ${typeColor}`}>
+              {typeTitle}
+            </span>
             <Badge
               variant="outline"
               className={`text-[9px] px-1.5 py-0 h-4 shrink-0 ${confidenceColor}`}
@@ -48,6 +54,9 @@ function InsightCard({ insight, index }: { insight: AIInsight; index: number }) 
               {insight.confidence}
             </Badge>
           </div>
+          <p className="text-xs font-medium text-zinc-200 leading-snug">
+            {insight.message}
+          </p>
 
           {/* Reasoning (expandable) */}
           {insight.reasoning && insight.reasoning.length > 0 && (
@@ -101,20 +110,13 @@ export default function AIInsightsPanel({
   const [collapsed, setCollapsed] = useState(false);
 
   return (
-    <Card className="bg-zinc-900/90 border-zinc-700 text-white backdrop-blur-sm">
+    <Card className="ic-card text-white">
       <CardContent className="p-3">
         <div className="flex items-center justify-between mb-2">
           <div className="flex items-center gap-2">
-            <span className="text-sm">🤖</span>
             <h3 className="text-xs font-semibold text-zinc-300 uppercase tracking-wider">
               AI Advisor
             </h3>
-            <Badge
-              variant="outline"
-              className="text-[8px] px-1 py-0 h-3.5 bg-blue-500/10 text-blue-300 border-blue-500/30"
-            >
-              BETA
-            </Badge>
           </div>
           <Button
             variant="ghost"
@@ -177,7 +179,7 @@ export default function AIInsightsPanel({
                       disabled={!canRun || !aiEnabled || isLoading}
                       className="bg-blue-600 hover:bg-blue-700 text-white text-sm px-4 py-2 h-8"
                     >
-                      🔥 Analyze Fire
+                      Analyze Fire
                     </Button>
                   </>
                 )}

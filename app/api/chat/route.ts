@@ -16,6 +16,20 @@ const DEFAULT_RESOURCES: Resources = {
   etaMinutesAir: 45,
 };
 
+// Singleton Anthropic client (reused across requests for better performance)
+let anthropicClient: Anthropic | null = null;
+
+function getAnthropicClient(): Anthropic {
+  if (!anthropicClient) {
+    const apiKey = process.env.ANTHROPIC_API_KEY;
+    if (!apiKey || apiKey === "your_anthropic_api_key_here") {
+      throw new Error("ANTHROPIC_API_KEY not configured");
+    }
+    anthropicClient = new Anthropic({ apiKey });
+  }
+  return anthropicClient;
+}
+
 function nowId(prefix: string) {
   return `${prefix}_${Date.now()}_${Math.random().toString(16).slice(2)}`;
 }
@@ -29,7 +43,7 @@ function buildIncidentStub(active: ChatRequestBody["active"]): Incident {
     startTimeISO: new Date().toISOString(),
     perimeter: { type: "Point", radiusMeters: 200 },
     fuelProxy: "mixed",
-    notes: active.mode === "live" ? "Live signal (satellite/official sources may lag)." : "Scenario incident.",
+    notes: "Live signal (satellite/official sources may lag).",
   };
 }
 
@@ -299,67 +313,64 @@ export async function POST(req: Request) {
       active?.windShiftEnabled && active?.windShift ? (active.windShift as any) : null;
 
     if (isOperationalQuestion(lastUser)) {
+      // Step 1: Get weather first (required for both spread and recs)
       if (!weather) {
         const r = await runTool(req.url, "get_weather", { lat: incident.lat, lon: incident.lon }, { active });
         traces.push(r.trace);
         weather = r.output as Weather;
         active.weather = weather;
       }
-      if (!spread && weather) {
-        const r = await runTool(
-          req.url,
-          "compute_spread",
-          { incident, weather, horizonHours: 3, windShift },
-          { active }
-        );
-        traces.push(r.trace);
-        spread = r.output as SpreadResult;
-        active.spread = spread;
-      }
-      if (!recs && weather && spread) {
-        const r = await runTool(
-          req.url,
-          "get_action_cards",
-          {
-            incident,
-            weather,
-            envelopes: spread.envelopes,
-            assets,
-            resources,
-            spreadRateKmH: spread.explain?.rateKmH,
-            windShift,
-          },
-          { active }
-        );
-        traces.push(r.trace);
-        recs = r.output as RecommendationsResult;
-        active.cards = recs;
-      }
-    }
 
-    const apiKey = process.env.ANTHROPIC_API_KEY;
-    if (!apiKey || apiKey === "your_anthropic_api_key_here") {
-      const fb = deterministicFallback({
-        incident,
-        weather,
-        spread,
-        recs,
-        error: "ANTHROPIC_API_KEY not configured",
-      });
-      const assistant: ChatMessage = {
-        id: nowId("asst"),
-        role: "assistant",
-        createdAt: Date.now(),
-        content: fb.content,
-        structured: fb.structured,
-        trace: traces,
-      };
-      return NextResponse.json({ assistant, active });
+      // Step 2: Run spread and prepare recs in parallel (both depend on weather)
+      if (weather) {
+        const parallelTasks: Promise<any>[] = [];
+
+        // Compute spread if missing
+        if (!spread) {
+          parallelTasks.push(
+            runTool(
+              req.url,
+              "compute_spread",
+              { incident, weather, horizonHours: 3, windShift },
+              { active }
+            ).then((r) => {
+              traces.push(r.trace);
+              spread = r.output as SpreadResult;
+              active.spread = spread;
+              return r;
+            })
+          );
+        }
+
+        // Wait for spread to complete before running recs (since recs depends on spread.envelopes)
+        await Promise.all(parallelTasks);
+
+        // Step 3: Get action cards if we now have spread and still missing recs
+        if (!recs && spread) {
+          const r = await runTool(
+            req.url,
+            "get_action_cards",
+            {
+              incident,
+              weather,
+              envelopes: spread.envelopes,
+              assets,
+              resources,
+              spreadRateKmH: spread.explain?.rateKmH,
+              windShift,
+            },
+            { active }
+          );
+          traces.push(r.trace);
+          recs = r.output as RecommendationsResult;
+          active.cards = recs;
+        }
+      }
     }
 
     let finalText: string | null = null;
     try {
-      const client = new Anthropic({ apiKey });
+      const client = getAnthropicClient();
       const tools = getClaudeToolDefinitions();
 
       // Build Anthropic messages from chat history
@@ -398,8 +409,8 @@ export async function POST(req: Request) {
         }
 
         const toolResults: any[] = [];
-        for (const tu of toolUses) {
-          const name = tu.name as any;
+        for (const tu of toolUses as any[]) {
+          const name = tu.name;
           const input = tu.input;
           try {
             const r = await runTool(req.url, name, input, { active });

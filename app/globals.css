@@ -81,6 +81,19 @@
   --sidebar-accent-foreground: oklch(0.205 0 0);
   --sidebar-border: oklch(0.922 0 0);
   --sidebar-ring: oklch(0.708 0 0);
+
+  /* Wildfire IC Color System */
+  --ic-red: #DC2626;
+  --ic-orange: #EA580C;
+  --ic-yellow: #CA8A04;
+  --ic-green: #16A34A;
+  --ic-blue: #2563EB;
+
+  /* Fire Intensity Colors */
+  --fire-critical: #B91C1C;
+  --fire-high: #DC2626;
+  --fire-moderate: #F97316;
+  --fire-low: #FB923C;
 }
 
 .dark {
@@ -123,6 +136,27 @@
   }
   body {
     @apply bg-background text-foreground;
+  }
+
+  /* IC Typography Hierarchy */
+  .ic-heading {
+    @apply text-xs uppercase tracking-wider font-bold text-zinc-400;
+    letter-spacing: 0.1em;
+  }
+
+  .ic-value-critical {
+    @apply text-lg font-bold tabular-nums;
+  }
+
+  .ic-label {
+    @apply text-[10px] uppercase tracking-wide text-zinc-500 font-medium;
+  }
+
+  .ic-card {
+    @apply bg-gradient-to-br from-zinc-900/95 to-zinc-950/95
+           backdrop-blur-lg border border-zinc-700/50
+           shadow-2xl shadow-black/40
+           hover:border-zinc-600/50 transition-all duration-200;
   }
 }
 

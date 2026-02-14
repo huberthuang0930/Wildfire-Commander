@@ -92,7 +92,7 @@ function EvidenceSummary({ structured }: { structured: AssistantStructured }) {
 }
 
 export default function ChatPanel(props: {
-  mode: "scenario" | "live";
+  mode: "live";
   activeIncidentName: string;
   messages: ChatMessage[];
   isLoading: boolean;
@@ -131,12 +131,11 @@ export default function ChatPanel(props: {
   }
 
   return (
-    <Card className="bg-zinc-900/90 border-zinc-700 text-white backdrop-blur-sm">
+    <Card className="ic-card text-white">
       <CardContent className="p-3 space-y-3">
         <div className="flex items-start justify-between gap-2">
           <div>
             <div className="flex items-center gap-2">
-              <span className="text-sm">💬</span>
               <h3 className="text-xs font-semibold text-zinc-300 uppercase tracking-wider">
                 Chat Ops
               </h3>

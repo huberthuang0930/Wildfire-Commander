@@ -7,20 +7,17 @@ import { Badge } from "@/components/ui/badge";
 
 const TYPE_CONFIG: Record<
   string,
-  { icon: string; color: string; bgColor: string }
+  { color: string; bgColor: string }
 > = {
   evacuation: {
-    icon: "🚨",
     color: "text-red-400",
     bgColor: "border-l-red-500",
   },
   resources: {
-    icon: "🚒",
     color: "text-blue-400",
     bgColor: "border-l-blue-500",
   },
   tactics: {
-    icon: "🎯",
     color: "text-amber-400",
     bgColor: "border-l-amber-500",
   },
@@ -50,12 +47,11 @@ export default function ActionCardComponent({
 
   return (
     <Card
-      className={`bg-zinc-900/90 border-zinc-700 text-white backdrop-blur-sm border-l-4 ${config.bgColor} transition-all hover:bg-zinc-800/90`}
+      className={`ic-card text-white border-l-4 ${config.bgColor}`}
     >
       <CardHeader className="pb-1 pt-3 px-3">
         <div className="flex items-start justify-between gap-2">
           <div className="flex items-center gap-2 min-w-0">
-            <span className="text-lg shrink-0">{config.icon}</span>
             <div className="min-w-0">
               <div className="flex items-center gap-2 mb-0.5">
                 <Badge
