@@ -11,6 +11,8 @@ interface ControlsBarProps {
   onSelectScenario: (id: string) => void;
   windShiftEnabled: boolean;
   onToggleWindShift: () => void;
+  aiEnabled: boolean;
+  onToggleAI: () => void;
   onRefresh: () => void;
   onOpenBrief: () => void;
   lastUpdated: Date | null;
@@ -23,6 +25,8 @@ export default function ControlsBar({
   onSelectScenario,
   windShiftEnabled,
   onToggleWindShift,
+  aiEnabled,
+  onToggleAI,
   onRefresh,
   onOpenBrief,
   lastUpdated,
@@ -65,6 +69,20 @@ export default function ControlsBar({
           }`}
         >
           💨 Wind Shift {windShiftEnabled ? "ON" : "OFF"}
+        </Button>
+
+        {/* AI Insights Toggle */}
+        <Button
+          variant={aiEnabled ? "default" : "outline"}
+          size="sm"
+          onClick={onToggleAI}
+          className={`text-xs h-8 ${
+            aiEnabled
+              ? "bg-blue-600 hover:bg-blue-700 text-white"
+              : "border-zinc-700 text-zinc-400 hover:text-white hover:bg-zinc-800"
+          }`}
+        >
+          🤖 AI {aiEnabled ? "ON" : "OFF"}
         </Button>
 
         {/* Refresh */}

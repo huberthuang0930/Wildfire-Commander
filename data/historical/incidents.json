@@ -1,0 +1,382 @@
+{
+  "incidents": [
+    {
+      "id": "cal_fire_2023_087",
+      "name": "Palo Alto Grassfire 2023",
+      "date": "2023-07-15",
+      "location": "Northern California",
+      "fuel": "grass",
+      "weather": {
+        "windSpeedMps": 8.5,
+        "humidityPct": 18,
+        "temperatureC": 32
+      },
+      "outcome": "contained",
+      "containmentTimeHours": 2.5,
+      "finalAcres": 45,
+      "resources": {
+        "engines": 5,
+        "dozers": 1,
+        "airSupport": true
+      },
+      "keyLesson": "Early helicopter water drops prevented escape to residential area"
+    },
+    {
+      "id": "cal_fire_2023_152",
+      "name": "Riverside Valley Fire 2023",
+      "date": "2023-08-22",
+      "location": "Southern California",
+      "fuel": "grass",
+      "weather": {
+        "windSpeedMps": 12.0,
+        "humidityPct": 15,
+        "temperatureC": 35
+      },
+      "outcome": "escaped",
+      "containmentTimeHours": 0,
+      "finalAcres": 1250,
+      "resources": {
+        "engines": 3,
+        "dozers": 0,
+        "airSupport": false
+      },
+      "keyLesson": "High winds and no air support led to rapid spread; community evacuations required"
+    },
+    {
+      "id": "cal_fire_2022_201",
+      "name": "Oak Creek Brush Fire 2022",
+      "date": "2022-09-10",
+      "location": "Northern California",
+      "fuel": "brush",
+      "weather": {
+        "windSpeedMps": 7.0,
+        "humidityPct": 25,
+        "temperatureC": 28
+      },
+      "outcome": "contained",
+      "containmentTimeHours": 3.0,
+      "finalAcres": 120,
+      "resources": {
+        "engines": 6,
+        "dozers": 2,
+        "airSupport": true
+      },
+      "keyLesson": "Dozer line construction on right flank was critical to containment"
+    },
+    {
+      "id": "cal_fire_2022_089",
+      "name": "Summit Ridge Fire 2022",
+      "date": "2022-06-18",
+      "location": "Central California",
+      "fuel": "brush",
+      "weather": {
+        "windSpeedMps": 10.5,
+        "humidityPct": 20,
+        "temperatureC": 31
+      },
+      "outcome": "partial",
+      "containmentTimeHours": 4.5,
+      "finalAcres": 340,
+      "resources": {
+        "engines": 4,
+        "dozers": 1,
+        "airSupport": true
+      },
+      "keyLesson": "Wind shift at 2 hours required evacuation of Crest View subdivision"
+    },
+    {
+      "id": "cal_fire_2021_153",
+      "name": "Meadow Grassfire 2021",
+      "date": "2021-07-25",
+      "location": "Northern California",
+      "fuel": "grass",
+      "weather": {
+        "windSpeedMps": 11.0,
+        "humidityPct": 16,
+        "temperatureC": 33
+      },
+      "outcome": "escaped",
+      "containmentTimeHours": 0,
+      "finalAcres": 890,
+      "resources": {
+        "engines": 4,
+        "dozers": 1,
+        "airSupport": false
+      },
+      "keyLesson": "Air tanker request delayed by 45 minutes; fire doubled in size during wait"
+    },
+    {
+      "id": "cal_fire_2021_098",
+      "name": "Canyon Creek Fire 2021",
+      "date": "2021-06-12",
+      "location": "Southern California",
+      "fuel": "chaparral",
+      "weather": {
+        "windSpeedMps": 9.0,
+        "humidityPct": 22,
+        "temperatureC": 29
+      },
+      "outcome": "contained",
+      "containmentTimeHours": 3.5,
+      "finalAcres": 185,
+      "resources": {
+        "engines": 7,
+        "dozers": 2,
+        "airSupport": true
+      },
+      "keyLesson": "Early engine deployment and continuous air attack prevented escape"
+    },
+    {
+      "id": "cal_fire_2020_067",
+      "name": "Valley Floor Grassfire 2020",
+      "date": "2020-08-15",
+      "location": "Central California",
+      "fuel": "grass",
+      "weather": {
+        "windSpeedMps": 6.5,
+        "humidityPct": 30,
+        "temperatureC": 30
+      },
+      "outcome": "contained",
+      "containmentTimeHours": 1.5,
+      "finalAcres": 25,
+      "resources": {
+        "engines": 4,
+        "dozers": 0,
+        "airSupport": false
+      },
+      "keyLesson": "Moderate conditions allowed quick hand line construction; no air support needed"
+    },
+    {
+      "id": "cal_fire_2020_132",
+      "name": "Hillside Mixed Fire 2020",
+      "date": "2020-09-20",
+      "location": "Northern California",
+      "fuel": "mixed",
+      "weather": {
+        "windSpeedMps": 13.0,
+        "humidityPct": 14,
+        "temperatureC": 36
+      },
+      "outcome": "escaped",
+      "containmentTimeHours": 0,
+      "finalAcres": 2100,
+      "resources": {
+        "engines": 5,
+        "dozers": 1,
+        "airSupport": true
+      },
+      "keyLesson": "Extreme conditions overwhelmed resources; upslope fire run at 1 hour mark"
+    },
+    {
+      "id": "cal_fire_2019_201",
+      "name": "Coastal Brush Fire 2019",
+      "date": "2019-10-05",
+      "location": "Southern California",
+      "fuel": "brush",
+      "weather": {
+        "windSpeedMps": 8.0,
+        "humidityPct": 28,
+        "temperatureC": 27
+      },
+      "outcome": "contained",
+      "containmentTimeHours": 2.0,
+      "finalAcres": 80,
+      "resources": {
+        "engines": 5,
+        "dozers": 1,
+        "airSupport": true
+      },
+      "keyLesson": "Favorable humidity and coordinated ground-air attack enabled quick containment"
+    },
+    {
+      "id": "cal_fire_2019_155",
+      "name": "Ridge Top Chaparral 2019",
+      "date": "2019-07-30",
+      "location": "Southern California",
+      "fuel": "chaparral",
+      "weather": {
+        "windSpeedMps": 11.5,
+        "humidityPct": 17,
+        "temperatureC": 34
+      },
+      "outcome": "partial",
+      "containmentTimeHours": 5.0,
+      "finalAcres": 450,
+      "resources": {
+        "engines": 6,
+        "dozers": 2,
+        "airSupport": true
+      },
+      "keyLesson": "Dense fuel required extensive dozer work; air support slowed head fire"
+    },
+    {
+      "id": "cal_fire_2018_089",
+      "name": "Prairie Grassfire 2018",
+      "date": "2018-06-22",
+      "location": "Central California",
+      "fuel": "grass",
+      "weather": {
+        "windSpeedMps": 10.0,
+        "humidityPct": 19,
+        "temperatureC": 31
+      },
+      "outcome": "contained",
+      "containmentTimeHours": 2.0,
+      "finalAcres": 65,
+      "resources": {
+        "engines": 5,
+        "dozers": 1,
+        "airSupport": true
+      },
+      "keyLesson": "Air tanker retardant drop at 1 hour mark stopped head fire advance"
+    },
+    {
+      "id": "cal_fire_2018_177",
+      "name": "Mountain Mixed Fire 2018",
+      "date": "2018-08-14",
+      "location": "Northern California",
+      "fuel": "mixed",
+      "weather": {
+        "windSpeedMps": 9.5,
+        "humidityPct": 21,
+        "temperatureC": 30
+      },
+      "outcome": "contained",
+      "containmentTimeHours": 3.5,
+      "finalAcres": 145,
+      "resources": {
+        "engines": 6,
+        "dozers": 2,
+        "airSupport": true
+      },
+      "keyLesson": "Aggressive initial attack with full resource complement prevented escape"
+    },
+    {
+      "id": "cal_fire_2017_142",
+      "name": "Wildland Brush Fire 2017",
+      "date": "2017-09-08",
+      "location": "Southern California",
+      "fuel": "brush",
+      "weather": {
+        "windSpeedMps": 12.5,
+        "humidityPct": 16,
+        "temperatureC": 35
+      },
+      "outcome": "escaped",
+      "containmentTimeHours": 0,
+      "finalAcres": 1450,
+      "resources": {
+        "engines": 4,
+        "dozers": 1,
+        "airSupport": false
+      },
+      "keyLesson": "High winds without air support led to rapid escape; structures threatened within 90 minutes"
+    },
+    {
+      "id": "cal_fire_2017_098",
+      "name": "River Valley Grassfire 2017",
+      "date": "2017-07-19",
+      "location": "Central California",
+      "fuel": "grass",
+      "weather": {
+        "windSpeedMps": 7.5,
+        "humidityPct": 24,
+        "temperatureC": 29
+      },
+      "outcome": "contained",
+      "containmentTimeHours": 1.5,
+      "finalAcres": 35,
+      "resources": {
+        "engines": 4,
+        "dozers": 0,
+        "airSupport": false
+      },
+      "keyLesson": "Low wind and moderate humidity allowed rapid engine-only containment"
+    },
+    {
+      "id": "cal_fire_2016_211",
+      "name": "Foothill Chaparral Fire 2016",
+      "date": "2016-10-12",
+      "location": "Southern California",
+      "fuel": "chaparral",
+      "weather": {
+        "windSpeedMps": 10.0,
+        "humidityPct": 20,
+        "temperatureC": 32
+      },
+      "outcome": "contained",
+      "containmentTimeHours": 4.0,
+      "finalAcres": 220,
+      "resources": {
+        "engines": 7,
+        "dozers": 3,
+        "airSupport": true
+      },
+      "keyLesson": "Multiple dozer lines and sustained air attack contained dense fuel fire"
+    },
+    {
+      "id": "cal_fire_2016_166",
+      "name": "Urban Interface Grassfire 2016",
+      "date": "2016-08-28",
+      "location": "Northern California",
+      "fuel": "grass",
+      "weather": {
+        "windSpeedMps": 11.5,
+        "humidityPct": 17,
+        "temperatureC": 34
+      },
+      "outcome": "partial",
+      "containmentTimeHours": 3.0,
+      "finalAcres": 175,
+      "resources": {
+        "engines": 6,
+        "dozers": 1,
+        "airSupport": true
+      },
+      "keyLesson": "Community evacuation ordered at 90 minutes; structures saved by engine protection"
+    },
+    {
+      "id": "cal_fire_2015_134",
+      "name": "Coastal Mixed Fire 2015",
+      "date": "2015-09-15",
+      "location": "Southern California",
+      "fuel": "mixed",
+      "weather": {
+        "windSpeedMps": 8.5,
+        "humidityPct": 26,
+        "temperatureC": 28
+      },
+      "outcome": "contained",
+      "containmentTimeHours": 2.5,
+      "finalAcres": 95,
+      "resources": {
+        "engines": 5,
+        "dozers": 1,
+        "airSupport": true
+      },
+      "keyLesson": "Moderate conditions and quick air support enabled early containment"
+    },
+    {
+      "id": "cal_fire_2015_089",
+      "name": "Valley Brush Fire 2015",
+      "date": "2015-07-05",
+      "location": "Central California",
+      "fuel": "brush",
+      "weather": {
+        "windSpeedMps": 13.0,
+        "humidityPct": 15,
+        "temperatureC": 37
+      },
+      "outcome": "escaped",
+      "containmentTimeHours": 0,
+      "finalAcres": 1680,
+      "resources": {
+        "engines": 4,
+        "dozers": 0,
+        "airSupport": false
+      },
+      "keyLesson": "Extreme conditions and delayed resource arrival led to major escape; multiple communities evacuated"
+    }
+  ]
+}

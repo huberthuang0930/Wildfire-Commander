@@ -120,3 +120,35 @@ export interface Scenario {
 export interface ScenariosData {
   scenarios: Scenario[];
 }
+
+// ===== AI Insights Types =====
+
+export interface AIInsight {
+  type: "warning" | "recommendation" | "context";
+  message: string; // 15-25 words, firefighter-friendly
+  confidence: "high" | "medium" | "low";
+  reasoning: string[]; // Bullet points explaining WHY
+  sources?: string[]; // IDs of similar historical incidents
+}
+
+export interface HistoricalIncident {
+  id: string;
+  name: string;
+  date: string;
+  location: string;
+  fuel: "grass" | "brush" | "mixed" | "chaparral";
+  weather: {
+    windSpeedMps: number;
+    humidityPct: number;
+    temperatureC: number;
+  };
+  outcome: "contained" | "escaped" | "partial";
+  containmentTimeHours: number;
+  finalAcres: number;
+  resources: {
+    engines: number;
+    dozers: number;
+    airSupport: boolean;
+  };
+  keyLesson: string;
+}

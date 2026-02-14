@@ -14,10 +14,12 @@ import type {
   RiskScore,
   Brief,
   WindShift,
+  AIInsight,
 } from "@/lib/types";
 import IncidentPanel from "@/components/IncidentPanel";
 import ActionCards from "@/components/ActionCards";
 import ExplainPanel from "@/components/ExplainPanel";
+import AIInsightsPanel from "@/components/AIInsightsPanel";
 import ControlsBar from "@/components/ControlsBar";
 import BriefModal from "@/components/BriefModal";
 
@@ -47,8 +49,13 @@ export default function Home() {
   const [riskScore, setRiskScore] = useState<RiskScore | null>(null);
   const [brief, setBrief] = useState<Brief | null>(null);
 
+  // AI insights state
+  const [aiInsights, setAIInsights] = useState<AIInsight[]>([]);
+  const [aiLoading, setAILoading] = useState(false);
+
   // UI state
   const [windShiftEnabled, setWindShiftEnabled] = useState(false);
+  const [aiEnabled, setAIEnabled] = useState(true);
   const [briefOpen, setBriefOpen] = useState(false);
   const [briefMarkdown, setBriefMarkdown] = useState<string | null>(null);
   const [lastUpdated, setLastUpdated] = useState<Date | null>(null);
@@ -179,11 +186,39 @@ export default function Home() {
         prevRiskRef.current = recsData.riskScore.total;
       }
 
+      // 5. Fetch AI insights (only if AI is enabled)
+      if (aiEnabled && recsData.riskScore) {
+        setAILoading(true);
+        try {
+          const aiRes = await fetch("/api/ai-insights", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              incident,
+              weather: weatherData,
+              riskScore: recsData.riskScore,
+              spreadRate: spreadData.explain.rateKmH,
+              cards: recsData.cards || [],
+            }),
+          });
+          const aiData = await aiRes.json();
+          setAIInsights(aiData.insights || []);
+        } catch (err) {
+          console.error("AI insights error:", err);
+          setAIInsights([]);
+        } finally {
+          setAILoading(false);
+        }
+      } else if (!aiEnabled) {
+        // Clear insights when AI is disabled
+        setAIInsights([]);
+      }
+
       setLastUpdated(new Date());
     } catch (err) {
       console.error("Error refreshing data:", err);
     }
-  }, [incident, resources, assets, scenarios, selectedScenarioId, windShiftEnabled]);
+  }, [incident, resources, assets, scenarios, selectedScenarioId, windShiftEnabled, aiEnabled]);
 
   // Initial data load when incident changes
   useEffect(() => {
@@ -246,6 +281,8 @@ export default function Home() {
         onSelectScenario={handleSelectScenario}
         windShiftEnabled={windShiftEnabled}
         onToggleWindShift={() => setWindShiftEnabled((prev) => !prev)}
+        aiEnabled={aiEnabled}
+        onToggleAI={() => setAIEnabled((prev) => !prev)}
         onRefresh={refreshData}
         onOpenBrief={handleOpenBrief}
         lastUpdated={lastUpdated}
@@ -261,10 +298,11 @@ export default function Home() {
           assets={assets}
         />
 
-        {/* Left panel: Incident + Explain */}
+        {/* Left panel: Incident + Explain + AI Insights */}
         <div className="absolute top-4 left-4 z-10 w-72 space-y-2 max-h-[calc(100vh-120px)] overflow-y-auto scrollbar-thin">
           <IncidentPanel incident={incident} weather={weather} />
           <ExplainPanel riskScore={riskScore} spreadExplain={spreadExplain} />
+          <AIInsightsPanel insights={aiInsights} isLoading={aiLoading} />
         </div>
 
         {/* Right panel: Action Cards */}

@@ -9,6 +9,8 @@
     "lint": "eslint"
   },
   "dependencies": {
+    "@anthropic-ai/claude-agent-sdk": "^0.2.42",
+    "@anthropic-ai/sdk": "^0.74.0",
     "@turf/turf": "^7.3.4",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
@@ -24,8 +26,8 @@
   "devDependencies": {
     "@tailwindcss/postcss": "^4",
     "@types/mapbox-gl": "^3.4.1",
-    "@types/node": "^20",
-    "@types/react": "^19",
+    "@types/node": "20.19.33",
+    "@types/react": "19.2.14",
     "@types/react-dom": "^19",
     "eslint": "^9",
     "eslint-config-next": "16.1.6",
