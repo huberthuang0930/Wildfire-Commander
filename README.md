@@ -1,36 +1,139 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# InitialAttack IC Assist
 
-## Getting Started
+> 3 decisions in 10 seconds for the first 0–3 hours of a wildfire.
 
-First, run the development server:
+A wildfire incident commander decision support tool that provides:
+- **Map-first incident view** with Mapbox + Deck.gl GPU-accelerated overlays
+- **Wind-driven spread projections** (1h / 2h / 3h cone envelopes)
+- **3 ranked Action Cards** (Evacuation, Resources, Tactics) with Why + Confidence
+- **Trigger-based updates** (wind shift, time-to-impact, communities at risk)
+- **Scenario Mode** with 3 preloaded incidents for reliable demos
+- **Exportable Incident Brief** (copy/print)
+
+## Quick Start
 
 ```bash
+# Install dependencies
+npm install
+
+# Set your Mapbox token
+# Edit .env.local and replace 'your_mapbox_token_here' with your actual token
+# Get one free at https://account.mapbox.com/
+
+# Run development server
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Open [http://localhost:3000](http://localhost:3000).
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+## Environment Variables
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+| Variable | Required | Description |
+|---|---|---|
+| `NEXT_PUBLIC_MAPBOX_TOKEN` | Yes | Mapbox GL JS access token |
 
-## Learn More
+## Preloaded Scenarios
 
-To learn more about Next.js, take a look at the following resources:
+| Scenario | Location | Challenge |
+|---|---|---|
+| **Riverside Creek** | Palo Alto, CA | Wind shift at +90 min threatens community |
+| **Summit Ridge** | LA County, CA | Chaparral on steep terrain, fast uphill run |
+| **Valley Grassfire** | Sacramento, CA | Fast grass fire, multiple communities at risk |
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+## Architecture
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+- **Frontend:** Next.js App Router + React + TypeScript + Tailwind CSS + shadcn/ui
+- **Map:** Mapbox GL JS (basemap) + Deck.gl (data layers)
+- **Backend:** Next.js API route handlers (no database needed)
+- **Weather:** Open-Meteo API (free, no key required)
+- **Tests:** Vitest
 
-## Deploy on Vercel
+## Project Structure
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+```
+app/
+  page.tsx              # Main orchestration page
+  layout.tsx            # Dark theme layout
+  api/
+    scenarios/route.ts  # GET preloaded scenarios
+    weather/route.ts    # GET weather from Open-Meteo
+    spread/route.ts     # POST compute spread envelopes
+    recommendations/    # POST generate action cards
+    brief/route.ts      # POST generate incident brief
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+components/
+  MapView.tsx           # Mapbox + Deck.gl map
+  IncidentPanel.tsx     # Left sidebar: incident + weather
+  ActionCards.tsx       # Right panel: 3 action cards
+  ActionCard.tsx        # Individual card component
+  ExplainPanel.tsx      # Risk score gauge + breakdown
+  ControlsBar.tsx       # Top bar: scenario picker, controls
+  ScenarioPicker.tsx    # Scenario dropdown
+  BriefModal.tsx        # Printable incident brief dialog
+
+lib/
+  types.ts              # All TypeScript interfaces
+  geo.ts                # Geospatial math (Haversine, cones)
+  spread.ts             # Fire spread model
+  risk.ts               # Risk scoring (0-100)
+  recommendations.ts    # Heuristic action card generation
+  explain.ts            # Human-readable explanations
+  openmeteo.ts          # Open-Meteo weather API client
+  scenarios.ts          # Scenario data loader
+
+data/
+  scenarios.json        # 3 preloaded scenarios
+
+tests/
+  spread.test.ts        # Spread model tests
+  risk.test.ts          # Risk scoring tests
+  recommendations.test.ts # Action card tests
+```
+
+## Fire Spread Model (Explainable)
+
+```
+baseRate      = 0.6 km/h
+windFactor    = 1 + windSpeed(m/s) / 10
+humidityFactor = humidity < 20% → 1.4 | < 30% → 1.2 | else → 1.0
+fuelFactor    = grass → 1.3 | chaparral → 1.2 | brush → 1.1 | mixed → 1.0
+
+spreadRate = baseRate × windFactor × humidityFactor × fuelFactor
+```
+
+## Risk Score (0–100)
+
+```
+35% × windSeverity      (0 at 0 m/s, 100 at 20+ m/s)
+35% × humiditySeverity   (100 at 0%, 0 at 60%+)
+30% × timeToImpact       (100 if < 30 min, 10 if > 180 min)
+```
+
+## Running Tests
+
+```bash
+npx vitest run
+```
+
+## 90-Second Demo Script
+
+1. **Open app** → Riverside Creek auto-loads with satellite map
+2. **Point to map** → "Fire origin, wind-driven spread cones at 1, 2, 3 hours"
+3. **Point to left panel** → "Live weather from Open-Meteo, risk score 72/100"
+4. **Point to right panel** → "Three action cards ranked by priority"
+5. **Click Evacuation card** → "Why: wind shift at 90 min pushes toward community"
+6. **Toggle Wind Shift ON** → Watch envelopes shift, risk score updates
+7. **Click Brief** → "One-click exportable incident brief"
+8. **Switch to Summit Ridge** → Different scenario, different recommendations
+9. **Key message:** "Simple, explainable, firefighter-friendly. First 3 hours only."
+
+## Tech Stack
+
+- Next.js 16 (App Router)
+- TypeScript
+- Tailwind CSS v4
+- shadcn/ui
+- Mapbox GL JS
+- Deck.gl
+- Open-Meteo API
+- Vitest
