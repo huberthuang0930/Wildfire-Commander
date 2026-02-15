@@ -1,26 +1,38 @@
 import { NextRequest, NextResponse } from "next/server";
 import { fetchWeather } from "@/lib/openmeteo";
+import type { Weather } from "@/lib/types";
 
-export async function GET(request: NextRequest) {
+export const dynamic = "force-dynamic";
+export const revalidate = 0;
+
+export async function GET(req: NextRequest) {
   try {
-    const { searchParams } = new URL(request.url);
-    const lat = parseFloat(searchParams.get("lat") || "0");
-    const lon = parseFloat(searchParams.get("lon") || "0");
+    const { searchParams } = new URL(req.url);
+    const latRaw = searchParams.get("lat");
+    const lonRaw = searchParams.get("lon");
 
-    if (!lat || !lon) {
+    const lat = latRaw != null ? Number(latRaw) : NaN;
+    const lon = lonRaw != null ? Number(lonRaw) : NaN;
+
+    if (!Number.isFinite(lat) || !Number.isFinite(lon)) {
       return NextResponse.json(
-        { error: "Missing lat/lon parameters" },
+        { error: "Missing or invalid lat/lon query params" },
         { status: 400 }
       );
     }
 
-    const weather = await fetchWeather(lat, lon);
-    return NextResponse.json(weather);
-  } catch (error) {
-    console.error("Error fetching weather:", error);
+    const weather: Weather = await fetchWeather(lat, lon);
+    return NextResponse.json(weather, {
+      headers: {
+        "Cache-Control": "no-store",
+      },
+    });
+  } catch (err) {
+    console.error("GET /api/weather failed:", err);
     return NextResponse.json(
       { error: "Failed to fetch weather" },
       { status: 500 }
     );
   }
 }
+
