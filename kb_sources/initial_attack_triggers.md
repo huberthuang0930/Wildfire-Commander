@@ -1,6 +1,6 @@
 # Initial Attack (0-3h) - Trigger Points (Training Aid)
 
-This is a training-oriented checklist for InitialAttack IC Assist demos. Replace with your IRPG / agency doctrine when available.
+This is a training-oriented checklist for Flashpoint demos. Replace with your IRPG / agency doctrine when available.
 
 ## Evacuation triggers (recommendations, not orders)
 

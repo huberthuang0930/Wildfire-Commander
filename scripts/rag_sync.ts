@@ -25,7 +25,7 @@ const OUT_DIR = path.join(ROOT, "kb_sources", "ingested");
 
 const UA =
   process.env.RAG_USER_AGENT ??
-  "InitialAttack-IC-Assist/0.1 (TreeHacks; doctrine-ingest; contact: demo@example.com)";
+  "Flashpoint/0.1 (TreeHacks; doctrine-ingest; contact: demo@example.com)";
 
 function ensureDir(p: string) {
   fs.mkdirSync(p, { recursive: true });

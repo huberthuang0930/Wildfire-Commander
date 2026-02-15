@@ -2,7 +2,7 @@ import { NwsForecastPeriod, NwsAlert, NwsEnrichment } from "./types";
 
 export const NWS_USER_AGENT =
   process.env.NWS_USER_AGENT ??
-  "(InitialAttack-IC-Assist, treehacks-demo@stanford.edu)";
+  "(Flashpoint, treehacks-demo@stanford.edu)";
 
 // ===== In-memory cache =====
 interface CacheEntry<T> {
