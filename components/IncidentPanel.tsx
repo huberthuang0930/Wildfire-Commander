@@ -3,6 +3,7 @@
 import { Incident, Weather, NwsEnrichment } from "@/lib/types";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 
 interface IncidentPanelProps {
   incident: Incident | null;
@@ -33,6 +34,10 @@ interface IncidentPanelProps {
     lastSeen: string;
     satellites: string[];
   } | null;
+  /** Handler to open brief modal */
+  onOpenBrief?: () => void;
+  /** Whether brief data is available */
+  canGenerateBrief?: boolean;
 }
 
 function WindArrow({ degrees }: { degrees: number }) {
@@ -56,6 +61,8 @@ export default function IncidentPanel({
   nws,
   perimeter,
   firms,
+  onOpenBrief,
+  canGenerateBrief = false,
 }: IncidentPanelProps) {
   if (!incident) {
     return (
@@ -334,6 +341,20 @@ export default function IncidentPanel({
                 </span>
               </div>
             </div>
+          </div>
+        )}
+
+        {/* Generate Brief Button */}
+        {onOpenBrief && canGenerateBrief && (
+          <div className="border-t border-zinc-700 pt-2.5">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={onOpenBrief}
+              className="w-full text-xs h-8 border-zinc-700 text-zinc-300 hover:text-white hover:bg-zinc-800 hover:border-zinc-600"
+            >
+              📄 Generate Brief
+            </Button>
           </div>
         )}
       </CardContent>

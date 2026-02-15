@@ -2,10 +2,10 @@
 
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import Legend from "./Legend";
 
 interface ControlsBarProps {
   onRefresh: () => void;
-  onOpenBrief: () => void;
   lastUpdated: Date | null;
   changesBanner: string | null;
   liveIncidentCount: number;
@@ -13,13 +13,12 @@ interface ControlsBarProps {
 
 export default function ControlsBar({
   onRefresh,
-  onOpenBrief,
   lastUpdated,
   changesBanner,
   liveIncidentCount,
 }: ControlsBarProps) {
   return (
-    <div className="relative">
+    <div className="relative z-[9999]">
       <div className="flex items-center gap-3 bg-zinc-950/80 backdrop-blur-md border-b border-zinc-800 px-4 py-2">
         {/* Logo / Title */}
         <div className="flex items-center gap-2.5 mr-2">
@@ -114,15 +113,8 @@ export default function ControlsBar({
           ↻ Refresh
         </Button>
 
-        {/* Brief Export */}
-        <Button
-          variant="outline"
-          size="sm"
-          onClick={onOpenBrief}
-          className="text-xs h-8 border-zinc-700 text-zinc-400 hover:text-white hover:bg-zinc-800"
-        >
-          Brief
-        </Button>
+        {/* Legend */}
+        <Legend />
 
         {/* Spacer */}
         <div className="flex-1" />

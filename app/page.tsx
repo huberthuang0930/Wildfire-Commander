@@ -431,7 +431,6 @@ export default function Home() {
       {/* Top controls bar */}
       <ControlsBar
         onRefresh={handleRefresh}
-        onOpenBrief={handleOpenBrief}
         lastUpdated={lastUpdated}
         changesBanner={changesBanner}
         liveIncidentCount={liveIncidents.length}
@@ -469,6 +468,8 @@ export default function Home() {
             nws={liveNws}
             perimeter={livePerimeter}
             firms={liveFirms}
+            onOpenBrief={handleOpenBrief}
+            canGenerateBrief={!!(incident && cards.length && riskScore && spreadExplain && brief)}
           />
 
           {/* Explain panel */}

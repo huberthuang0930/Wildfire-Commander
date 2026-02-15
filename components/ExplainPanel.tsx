@@ -120,21 +120,44 @@ export default function ExplainPanel({ riskScore, spreadExplain }: ExplainPanelP
           />
         </div>
 
-        {/* Expanded model notes */}
-        {expanded && spreadExplain && (
-          <div className="mt-3 pt-2 border-t border-zinc-700 space-y-1">
-            <div className="text-[10px] uppercase tracking-wider text-zinc-500 font-semibold mb-1">
-              Model: {spreadExplain.model}
-            </div>
-            <div className="text-xs text-zinc-400">
-              Spread Rate: {spreadExplain.rateKmH.toFixed(2)} km/h
-            </div>
-            {spreadExplain.notes.map((note, i) => (
-              <div key={i} className="text-xs text-zinc-500 flex items-start gap-1">
-                <span className="shrink-0">•</span>
-                <span>{note}</span>
+        {/* Expanded details */}
+        {expanded && (
+          <div className="mt-3 pt-2 border-t border-zinc-700 space-y-2">
+            {/* Risk Score Calculation */}
+            <div>
+              <div className="text-[10px] uppercase tracking-wider text-zinc-500 font-semibold mb-1">
+                Risk Score Calculation
               </div>
-            ))}
+              <div className="text-xs text-zinc-400 leading-relaxed space-y-0.5">
+                <div>• <span className="text-zinc-300">Wind Severity:</span> 35% weight (0 m/s = 0, 20+ m/s = 100)</div>
+                <div>• <span className="text-zinc-300">Humidity Severity:</span> 35% weight (60%+ = 0, 0% = 100)</div>
+                <div>• <span className="text-zinc-300">Time-to-Impact:</span> 30% weight (&lt;30 min = 100, &gt;180 min = 10)</div>
+              </div>
+              <div className="text-xs text-zinc-500 mt-1">
+                Total = {(0.35 * riskScore.breakdown.windSeverity).toFixed(0)} + {(0.35 * riskScore.breakdown.humiditySeverity).toFixed(0)} + {(0.30 * riskScore.breakdown.timeToImpactSeverity).toFixed(0)} = <span className="text-zinc-300 font-semibold">{riskScore.total}</span>
+              </div>
+              <div className="text-[10px] text-zinc-600 mt-1 italic">
+                {riskScore.total >= 75 ? "Extreme (≥75)" : riskScore.total >= 50 ? "High (50-74)" : riskScore.total >= 30 ? "Moderate (30-49)" : "Low (<30)"}
+              </div>
+            </div>
+
+            {/* Spread Model */}
+            {spreadExplain && (
+              <div>
+                <div className="text-[10px] uppercase tracking-wider text-zinc-500 font-semibold mb-1">
+                  Spread Model: {spreadExplain.model}
+                </div>
+                <div className="text-xs text-zinc-400">
+                  Spread Rate: {spreadExplain.rateKmH.toFixed(2)} km/h
+                </div>
+                {spreadExplain.notes.map((note, i) => (
+                  <div key={i} className="text-xs text-zinc-500 flex items-start gap-1">
+                    <span className="shrink-0">•</span>
+                    <span>{note}</span>
+                  </div>
+                ))}
+              </div>
+            )}
           </div>
         )}
       </CardContent>
