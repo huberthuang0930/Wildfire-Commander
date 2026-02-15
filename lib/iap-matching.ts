@@ -21,22 +21,23 @@ const RELEVANT_SECTIONS: Record<CardType, string[]> = {
 /**
  * Load IAP data from JSON file (cached in memory)
  */
-let cachedIAPData: IAPData[] | null = null;
+let cachedIAPData: IAPData[] | undefined;
 
 function loadIAPData(): IAPData[] {
-  if (cachedIAPData) {
-    return cachedIAPData;
-  }
+  if (cachedIAPData) return cachedIAPData;
 
   try {
     const dataPath = join(process.cwd(), "data", "iap", "iap-data.json");
     const rawData = readFileSync(dataPath, "utf-8");
     const parsed = JSON.parse(rawData);
-    cachedIAPData = parsed.iaps || [];
-    return cachedIAPData;
+    const iaps: IAPData[] = Array.isArray(parsed?.iaps) ? parsed.iaps : [];
+    cachedIAPData = iaps;
+    return iaps;
   } catch (error) {
     console.warn("Failed to load IAP data:", error);
-    return [];
+    // Cache empty to avoid repeated FS reads/log spam in production
+    cachedIAPData = [];
+    return cachedIAPData;
   }
 }
 
